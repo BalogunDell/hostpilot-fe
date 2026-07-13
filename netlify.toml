@@ -1,4 +1,7 @@
+# Build from repo ROOT (not /shared). In Netlify UI leave Base directory blank.
+
 [build]
+  base = ""
   command = "npm run build"
   publish = "dist"
 
