@@ -1,0 +1,81 @@
+/** StayPilot design tokens — extracted from design system screenshot */
+
+export const palette = {
+  primary: {
+    DEFAULT: '#1E293B',
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B',
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    900: '#0F172A',
+  },
+  secondary: {
+    DEFAULT: '#2563EB',
+    50: '#EFF6FF',
+    100: '#DBEAFE',
+    500: '#2563EB',
+    600: '#1D4ED8',
+    700: '#1E40AF',
+  },
+  tertiary: {
+    DEFAULT: '#10B981',
+    50: '#ECFDF5',
+    100: '#D1FAE5',
+    500: '#10B981',
+    600: '#059669',
+  },
+  neutral: {
+    DEFAULT: '#F8FAFC',
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    900: '#0F172A',
+  },
+  destructive: {
+    DEFAULT: '#EF4444',
+    50: '#FEF2F2',
+    500: '#EF4444',
+    600: '#DC2626',
+  },
+  warning: {
+    DEFAULT: '#F59E0B',
+    50: '#FFFBEB',
+    500: '#F59E0B',
+  },
+} as const
+
+export const semanticColors = {
+  light: {
+    background: palette.neutral.DEFAULT,
+    foreground: palette.primary[900],
+    card: '#FFFFFF',
+    cardForeground: palette.primary[900],
+    muted: palette.primary[100],
+    mutedForeground: palette.primary[500],
+    border: palette.primary[200],
+    input: palette.primary[200],
+    ring: palette.secondary.DEFAULT,
+    sidebar: '#FFFFFF',
+    sidebarForeground: palette.primary[600],
+    sidebarActive: palette.secondary.DEFAULT,
+  },
+  dark: {
+    background: palette.primary[900],
+    foreground: palette.neutral[50],
+    card: palette.primary[800],
+    cardForeground: palette.neutral[50],
+    muted: palette.primary[700],
+    mutedForeground: palette.primary[300],
+    border: palette.primary[700],
+    input: palette.primary[700],
+    ring: palette.secondary[500],
+    sidebar: palette.primary[800],
+    sidebarForeground: palette.primary[300],
+    sidebarActive: palette.secondary[500],
+  },
+} as const

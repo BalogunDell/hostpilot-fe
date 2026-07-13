@@ -1,0 +1,52 @@
+{
+  "name": "hostpilot-fe",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": "20.19.x",
+    "npm": "10.x"
+  },
+  "workspaces": [
+    "shared"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build --workspace=@staypilot/shared && tsc -b && vite build",
+    "postinstall": "npm run build --workspace=@staypilot/shared",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/geist-sans": "^5.2.5",
+    "@fontsource/inter": "^5.2.8",
+    "@staypilot/shared": "file:./shared",
+    "@tailwindcss/vite": "^4.3.2",
+    "@tanstack/react-query": "^5.101.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.23.0",
+    "react": "^19.2.7",
+    "react-big-calendar": "^1.20.0",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.9.1",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-big-calendar": "^1.16.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}

@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-sans/700.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Palette */
+  --color-primary-50: #f8fafc;
+  --color-primary-100: #f1f5f9;
+  --color-primary-200: #e2e8f0;
+  --color-primary-300: #cbd5e1;
+  --color-primary-400: #94a3b8;
+  --color-primary-500: #64748b;
+  --color-primary-600: #475569;
+  --color-primary-700: #334155;
+  --color-primary-800: #1e293b;
+  --color-primary-900: #0f172a;
+  --color-primary: #1e293b;
+  --color-primary-foreground: #ffffff;
+  --color-white: #ffffff;
+
+  --color-secondary-50: #eff6ff;
+  --color-secondary-100: #dbeafe;
+  --color-secondary-500: #2563eb;
+  --color-secondary-600: #1d4ed8;
+  --color-secondary: #2563eb;
+  --color-secondary-foreground: #ffffff;
+
+  --color-tertiary-50: #ecfdf5;
+  --color-tertiary-100: #d1fae5;
+  --color-tertiary-500: #10b981;
+  --color-tertiary-600: #059669;
+  --color-tertiary: #10b981;
+  --color-tertiary-foreground: #ffffff;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-50: #fef2f2;
+
+  --color-warning: #f59e0b;
+  --color-warning-50: #fffbeb;
+
+  /* Semantic */
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #2563eb;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #475569;
+  --color-sidebar-active: #2563eb;
+
+  /* Typography families */
+  --font-heading: 'Geist Sans', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-label: 'Geist Sans', 'Inter', system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+}
+
+.dark {
+  --color-background: #0f172a;
+  --color-foreground: #f8fafc;
+  --color-card: #1e293b;
+  --color-card-foreground: #f8fafc;
+  --color-muted: #334155;
+  --color-muted-foreground: #94a3b8;
+  --color-border: #334155;
+  --color-input: #334155;
+  --color-accent: #334155;
+  --color-accent-foreground: #f8fafc;
+  --color-sidebar: #1e293b;
+  --color-sidebar-foreground: #94a3b8;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  #root {
+    min-height: 100svh;
+  }
+
+  .rbc-calendar {
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 640px) {
+    .rbc-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+
+    .rbc-toolbar-label {
+      text-align: center;
+      order: -1;
+    }
+
+    .rbc-header {
+      padding: 0.375rem 0.25rem;
+      font-size: 0.6875rem;
+    }
+
+    .rbc-event {
+      font-size: 0.6875rem;
+    }
+  }
+}
