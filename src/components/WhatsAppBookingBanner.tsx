@@ -14,7 +14,11 @@ interface WhatsAppStatus {
   verifiedAt: string | null
 }
 
-const BOOKING_EXAMPLE = 'Booking: Ada Okonkwo, Starter Host Apartment, July 10–15, 180000, Airbnb'
+const COMMAND_EXAMPLES = [
+  'Booking: Ada Okonkwo, Starter Host Apartment, July 10–15, 180000, Airbnb',
+  'Expense: Cleaning, Starter Host Apartment, 15000',
+  'Available: Starter Host Apartment, July 2026',
+]
 
 export function WhatsAppBookingBanner() {
   const api = useApi()
@@ -69,16 +73,21 @@ export function WhatsAppBookingBanner() {
           ) : status?.connected ? (
             <>
               <Typography variant="body" className="mt-2 text-muted-foreground">
-                Message StayPilot on WhatsApp from your linked Business number{' '}
-                <span className="font-medium text-foreground">{status.phoneNumber}</span>{' '}
-                using this format and the booking will appear here automatically.
+                Message StayPilot on WhatsApp from your linked number{' '}
+                <span className="font-medium text-foreground">{status.phoneNumber}</span>
+                . Use one of these formats:
               </Typography>
-              <Typography
-                variant="caption"
-                className="mt-3 block rounded-lg border border-border bg-card px-3 py-2 font-mono text-xs text-foreground"
-              >
-                {BOOKING_EXAMPLE}
-              </Typography>
+              <div className="mt-3 flex flex-col gap-2">
+                {COMMAND_EXAMPLES.map((example) => (
+                  <Typography
+                    key={example}
+                    variant="caption"
+                    className="block rounded-lg border border-border bg-card px-3 py-2 font-mono text-xs text-foreground"
+                  >
+                    {example}
+                  </Typography>
+                ))}
+              </div>
             </>
           ) : (
             <>
