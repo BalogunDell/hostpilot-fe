@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": "20.19.x",
-    "npm": "10.x"
+    "node": ">=20.19"
   },
   "workspaces": [
     "shared"
@@ -13,7 +12,6 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build --workspace=@staypilot/shared && tsc -b && vite build",
-    "postinstall": "npm run build --workspace=@staypilot/shared",
     "lint": "oxlint",
     "preview": "vite preview"
   },

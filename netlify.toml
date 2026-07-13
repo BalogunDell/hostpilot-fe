@@ -3,7 +3,8 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20.19"
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--include=dev"
 
 # SPA fallback — React Router client routes
 [[redirects]]
