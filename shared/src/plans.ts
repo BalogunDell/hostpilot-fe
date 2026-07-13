@@ -21,6 +21,22 @@ export const PLAN_PROPERTY_LIMITS: Record<UserPlan, number> = {
   PRO: 10,
 }
 
+/** Null = unlimited. Counted per calendar month. */
+export const PLAN_BOOKING_LIMITS: Record<UserPlan, number | null> = {
+  FREE: 2,
+  STARTER: 2,
+  GROWTH: 10,
+  PRO: null,
+}
+
+/** Null = unlimited. Counted per calendar month. */
+export const PLAN_EXPENSE_LIMITS: Record<UserPlan, number | null> = {
+  FREE: 1,
+  STARTER: 1,
+  GROWTH: 5,
+  PRO: null,
+}
+
 export const PLAN_PRICES_NGN: Record<UserPlan, number> = {
   FREE: 0,
   STARTER: 0,
@@ -57,8 +73,10 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     propertyLimit: 1,
     features: [
       '1 property',
-      'Manual booking tracking',
-      'Manual expense tracking',
+      'Up to 2 bookings per month',
+      'Up to 1 expense per month',
+      'Check available dates for a month',
+      'Manual booking & expense tracking',
       'Calendar view',
       'Basic income summary',
       'Create up to 3 guest review links',
@@ -74,6 +92,9 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     recommended: true,
     features: [
       'Up to 3 properties',
+      'Up to 10 bookings per month',
+      'Up to 5 expenses per month',
+      'Check available dates for a month',
       'Everything in Starter',
       'Unlimited guest review links',
       'Shareable public review pages',
@@ -90,6 +111,8 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     propertyLimit: 10,
     features: [
       'Up to 10 properties',
+      'Unlimited bookings & expenses',
+      'Check available dates for a month',
       'Everything in Growth',
       'Co-host access',
       'Hide reviews from your public page',
@@ -124,6 +147,20 @@ export function comparePlans(a: UserPlan | string, b: UserPlan | string): number
 
 export function getPropertyLimit(plan: UserPlan | string): number {
   return PLAN_PROPERTY_LIMITS[normalizeUserPlan(plan)]
+}
+
+/** Null means unlimited. */
+export function getBookingLimit(plan: UserPlan | string): number | null {
+  return PLAN_BOOKING_LIMITS[normalizeUserPlan(plan)]
+}
+
+/** Null means unlimited. */
+export function getExpenseLimit(plan: UserPlan | string): number | null {
+  return PLAN_EXPENSE_LIMITS[normalizeUserPlan(plan)]
+}
+
+export function hasMonthAvailabilityCheck(_plan?: UserPlan | string): boolean {
+  return true
 }
 
 export function getReviewLinkLimit(plan: UserPlan | string): number | null {

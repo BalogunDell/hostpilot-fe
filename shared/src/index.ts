@@ -9,6 +9,8 @@ export {
 
 export {
   comparePlans,
+  getBookingLimit,
+  getExpenseLimit,
   getPlanDefinition,
   getPlanPriceNgn,
   getPropertyLimit,
@@ -18,6 +20,7 @@ export {
   hasCoHostAccess,
   hasCoHostReviewApproval,
   hasExportRecords,
+  hasMonthAvailabilityCheck,
   hasMonthlyReports,
   hasPortfolioDashboard,
   hasProfitSummary,
@@ -32,7 +35,9 @@ export {
   isPaidPlan,
   normalizeUserPlan,
   PAID_PLANS,
+  PLAN_BOOKING_LIMITS,
   PLAN_CATALOG,
+  PLAN_EXPENSE_LIMITS,
   PLAN_LABELS,
   PLAN_PRICES_NGN,
   PLAN_PROPERTY_LIMITS,
