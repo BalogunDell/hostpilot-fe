@@ -163,3 +163,122 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------
+   Landing page animations
+   --------------------------------------------------------------- */
+@keyframes hp-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hp-grow-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes hp-float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-18px) translateX(8px);
+  }
+}
+
+@keyframes hp-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+/* On-scroll reveal with staggered children */
+.reveal-group .reveal-item {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal-group.is-visible .reveal-item {
+  opacity: 1;
+  transform: none;
+}
+.reveal-group.is-visible .reveal-item:nth-child(2) {
+  transition-delay: 0.08s;
+}
+.reveal-group.is-visible .reveal-item:nth-child(3) {
+  transition-delay: 0.16s;
+}
+.reveal-group.is-visible .reveal-item:nth-child(4) {
+  transition-delay: 0.24s;
+}
+.reveal-group.is-visible .reveal-item:nth-child(5) {
+  transition-delay: 0.32s;
+}
+.reveal-group.is-visible .reveal-item:nth-child(6) {
+  transition-delay: 0.4s;
+}
+
+/* Hero entrance on mount (delay set inline) */
+.hp-enter {
+  opacity: 0;
+  animation: hp-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Animated expense bars — grow from the baseline when revealed */
+.hp-bar {
+  transform-origin: bottom;
+}
+.reveal-group.is-visible .hp-bar {
+  animation: hp-grow-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.reveal-group.is-visible .hp-bar:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.reveal-group.is-visible .hp-bar:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.reveal-group.is-visible .hp-bar:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.reveal-group.is-visible .hp-bar:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+/* Decorative floating glow behind the hero */
+.hp-float {
+  animation: hp-float 9s ease-in-out infinite;
+}
+.hp-glow {
+  animation: hp-glow 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-group .reveal-item,
+  .hp-enter,
+  .reveal-group.is-visible .hp-bar,
+  .hp-float,
+  .hp-glow {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

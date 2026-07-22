@@ -13,6 +13,9 @@ import {
   RegisterPage,
 } from './pages/auth/AuthPages'
 
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+)
 const OverviewPage = lazy(() =>
   import('./pages/OverviewPage').then((m) => ({ default: m.OverviewPage })),
 )
@@ -62,6 +65,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return children
 }
 
+/** Root: marketing landing for guests, dashboard for authenticated users. */
+function HomeRoute() {
+  const { token, sessionReady } = useAuth()
+  if (!sessionReady) return <PageLoader />
+  if (!token) return <LandingPage />
+  return <DashboardLayout />
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -79,14 +90,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
+        <Route path="/" element={<HomeRoute />}>
           <Route index element={<OverviewPage />} />
           <Route path="properties" element={<PropertiesPage />} />
           <Route path="properties/:id" element={<PropertyDetailPage />} />
