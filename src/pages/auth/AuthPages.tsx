@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { BarChart3 } from 'lucide-react'
 import { Button, Card, Input, Typography, WhatsAppBusinessInfoBanner } from '../../components'
 import { ApiStatusBanner } from '../../components/ApiStatusBanner'
 import { ApiError } from '../../api/client'
@@ -9,6 +10,22 @@ import { usePlanFeatures } from '../../hooks/usePlanFeatures'
 import {
   WHATSAPP_BUSINESS_PHONE_LABEL,
 } from '../../lib/whatsappCopy'
+
+/** HostsLedger brand lockup shown on unauthenticated pages. */
+function AuthBrand() {
+  return (
+    <Link
+      to="/"
+      aria-label="HostsLedger home"
+      className="mb-6 flex items-center justify-center gap-2.5"
+    >
+      <span className="grid size-9 place-items-center rounded-[9px] bg-primary-900 text-tertiary">
+        <BarChart3 className="size-5" aria-hidden />
+      </span>
+      <span className="text-[17px] font-bold tracking-tight text-foreground">HostsLedger</span>
+    </Link>
+  )
+}
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -35,6 +52,7 @@ export function LoginPage() {
       <ApiStatusBanner />
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
+          <AuthBrand />
           <Typography variant="h2" className="mb-2">Welcome back</Typography>
           <Typography variant="caption" className="mb-6 block">
             Sign in to manage your properties
@@ -90,6 +108,7 @@ export function RegisterPage() {
       <ApiStatusBanner />
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
+          <AuthBrand />
           <Typography variant="h2" className="mb-2">Create account</Typography>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -139,7 +158,8 @@ export function OnboardingPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg">
-        <Typography variant="h2" className="mb-2">Set up StayPilot</Typography>
+        <AuthBrand />
+        <Typography variant="h2" className="mb-2">Set up HostsLedger</Typography>
         <Typography variant="caption" className="mb-6 block">
           Add your first property and optionally connect a WhatsApp Business number.
         </Typography>
