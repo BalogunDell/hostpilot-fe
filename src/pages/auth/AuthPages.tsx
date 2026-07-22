@@ -14,8 +14,8 @@ import {
 /** HostsLedger brand lockup shown on unauthenticated pages. */
 function AuthBrand() {
   return (
-    <Link
-      to="/"
+    <a
+      href="https://www.hostsledger.com"
       aria-label="HostsLedger home"
       className="mb-6 flex items-center justify-center gap-2.5"
     >
@@ -23,7 +23,7 @@ function AuthBrand() {
         <BarChart3 className="size-5" aria-hidden />
       </span>
       <span className="text-[17px] font-bold tracking-tight text-foreground">HostsLedger</span>
-    </Link>
+    </a>
   )
 }
 
