@@ -28,6 +28,8 @@ export {
   hasAutoPublishReviews,
   hasReviewApproval,
   canHideReviews,
+  FREE_WHATSAPP_MONTHLY_BOOKINGS,
+  FREE_WHATSAPP_MONTHLY_EXPENSES,
   hasShareablePublicReviewPages,
   hasUnlimitedReviewLinks,
   hasWhatsAppAutomation,

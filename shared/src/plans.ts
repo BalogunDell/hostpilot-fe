@@ -54,6 +54,14 @@ export const PLAN_LABELS: Record<UserPlan, string> = {
 export const STARTER_REVIEW_LINK_LIMIT = 3
 export const STARTER_PUBLIC_REVIEW_LIMIT = 3
 
+/**
+ * Free (Starter) plan gets a monthly taster of WhatsApp logging, tracked
+ * separately from the manual booking/expense quotas. Paid plans log via
+ * WhatsApp against their normal monthly quotas.
+ */
+export const FREE_WHATSAPP_MONTHLY_BOOKINGS = 1
+export const FREE_WHATSAPP_MONTHLY_EXPENSES = 1
+
 export interface PlanDefinition {
   id: Exclude<UserPlan, 'FREE'>
   name: string
@@ -75,6 +83,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       '1 property',
       'Up to 2 bookings per month',
       'Up to 1 expense per month',
+      'Log 1 booking & 1 expense per month by WhatsApp',
       'Check available dates for a month',
       'Manual booking & expense tracking',
       'Calendar view',
@@ -94,6 +103,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       'Up to 3 properties',
       'Up to 10 bookings per month',
       'Up to 5 expenses per month',
+      'Log every booking & expense by WhatsApp',
       'Check available dates for a month',
       'Everything in Starter',
       'Unlimited guest review links',
@@ -197,8 +207,13 @@ export function hasPortfolioDashboard(plan: UserPlan | string): boolean {
   return normalizeUserPlan(plan) === 'PRO'
 }
 
-export function hasWhatsAppAutomation(plan: UserPlan | string): boolean {
-  return comparePlans(plan, 'GROWTH') >= 0
+/**
+ * WhatsApp logging is available on every plan. Free users get a small monthly
+ * allowance (see FREE_WHATSAPP_MONTHLY_BOOKINGS / _EXPENSES); paid plans log
+ * against their normal monthly quotas.
+ */
+export function hasWhatsAppAutomation(_plan?: UserPlan | string): boolean {
+  return true
 }
 
 export function hasCalendarSync(plan: UserPlan | string): boolean {

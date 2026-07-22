@@ -24,7 +24,7 @@ export function WhatsAppSettingsSection() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
-  const { hasWhatsApp } = usePlanFeatures()
+  const { hasWhatsApp, plan } = usePlanFeatures()
   const [phone, setPhone] = useState('')
   const [formError, setFormError] = useState('')
 
@@ -78,14 +78,14 @@ export function WhatsAppSettingsSection() {
 
       <WhatsAppBusinessInfoBanner />
 
-      {!hasWhatsApp ? (
+      {plan === 'STARTER' ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">
           <Typography variant="body" className="text-muted-foreground">
-            WhatsApp is available on the Growth plan and above.{' '}
+            Your free plan includes 1 booking and 1 expense per month by WhatsApp.{' '}
             <AppLink to="/settings#pricing" className="font-medium text-secondary hover:underline">
               Upgrade to Growth
             </AppLink>{' '}
-            to connect your WhatsApp Business number.
+            for unlimited WhatsApp logging.
           </Typography>
         </div>
       ) : null}
