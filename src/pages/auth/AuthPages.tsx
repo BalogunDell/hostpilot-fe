@@ -166,7 +166,7 @@ export function OnboardingPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <WhatsAppBusinessInfoBanner />
           <Input
-            label={WHATSAPP_BUSINESS_PHONE_LABEL}
+            label={`Optional: ${WHATSAPP_BUSINESS_PHONE_LABEL}`}
             placeholder="+234..."
             value={phone}
             disabled={!hasWhatsApp}

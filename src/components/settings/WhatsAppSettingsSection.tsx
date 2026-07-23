@@ -108,7 +108,7 @@ export function WhatsAppSettingsSection() {
         ) : (
           <div className="flex flex-col gap-4">
             <Input
-              label={WHATSAPP_BUSINESS_PHONE_LABEL}
+              label={`Optional: ${WHATSAPP_BUSINESS_PHONE_LABEL}`}
               placeholder="+234..."
               value={phone}
               disabled={!hasWhatsApp}
