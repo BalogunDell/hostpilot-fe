@@ -651,7 +651,7 @@ export function LandingPage() {
 
           <div>
             <h4 className="mb-3.5 text-xs uppercase tracking-widest text-primary-400">Legal</h4>
-            <a href="#" className="block py-1 text-sm text-primary-200 hover:text-white">
+            <a href="/privacy" className="block py-1 text-sm text-primary-200 hover:text-white">
               Privacy Policy
             </a>
             <a href="#" className="block py-1 text-sm text-primary-200 hover:text-white">

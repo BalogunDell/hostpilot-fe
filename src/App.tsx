@@ -16,6 +16,9 @@ import {
 const LandingPage = lazy(() =>
   import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
 )
+const PrivacyPolicyPage = lazy(() =>
+  import('./pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })),
+)
 const OverviewPage = lazy(() =>
   import('./pages/OverviewPage').then((m) => ({ default: m.OverviewPage })),
 )
@@ -79,6 +82,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
         <Route path="/listings/:slug" element={<PublicListingPage />} />
         <Route path="/review/:token" element={<ReviewSubmitPage />} />
