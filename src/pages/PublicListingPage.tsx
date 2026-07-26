@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
+import { Star } from 'lucide-react'
 import { Card, Image, Skeleton, Typography } from '../components'
 import { GuestReviewsList } from '../components/GuestReviewsList'
 import { apiRequest, formatNaira } from '../api/client'
@@ -66,12 +67,24 @@ export function PublicListingPage() {
           <Typography variant="body">{listing.description}</Typography>
         </Card>
 
-        {reviews.length > 0 ? (
-          <Card padding="lg" className="flex flex-col gap-4">
-            <Typography variant="h3">Guest reviews</Typography>
+        <Card padding="lg" className="flex flex-col gap-4">
+          <Typography variant="h3">Guest reviews</Typography>
+          {reviews.length > 0 ? (
             <GuestReviewsList reviews={reviews} emptyMessage="" />
-          </Card>
-        ) : null}
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <div className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+                <Star className="size-6" aria-hidden />
+              </div>
+              <div>
+                <Typography variant="label">No reviews yet</Typography>
+                <Typography variant="caption" className="mt-1 block text-muted-foreground">
+                  There are no reviews for this property yet.
+                </Typography>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   )
