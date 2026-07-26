@@ -8,6 +8,8 @@ import { useToast } from '../../context/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { usePlanFeatures } from '../../hooks/usePlanFeatures'
 import {
+  HOSTSLEDGER_WHATSAPP_NUMBER,
+  HOSTSLEDGER_WHATSAPP_WA_LINK,
   WHATSAPP_BUSINESS_PHONE_LABEL,
   WHATSAPP_FEATURE_DESCRIPTION,
 } from '../../lib/whatsappCopy'
@@ -103,6 +105,18 @@ export function WhatsAppSettingsSection() {
               {status.verifiedAt
                 ? ` · verified ${new Date(status.verifiedAt).toLocaleDateString()}`
                 : ''}
+            </Typography>
+            <Typography variant="caption" className="mt-2 block text-muted-foreground">
+              Message HostsLedger at{' '}
+              <a
+                href={HOSTSLEDGER_WHATSAPP_WA_LINK}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-secondary hover:underline"
+              >
+                {HOSTSLEDGER_WHATSAPP_NUMBER}
+              </a>{' '}
+              to add bookings and expenses.
             </Typography>
           </div>
         ) : (

@@ -5,7 +5,11 @@ import { AppLink } from '../context/AppNavigation'
 import { useAuth } from '../context/AuthContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
-import { WHATSAPP_FEATURE_DESCRIPTION } from '../lib/whatsappCopy'
+import {
+  HOSTSLEDGER_WHATSAPP_NUMBER,
+  HOSTSLEDGER_WHATSAPP_WA_LINK,
+  WHATSAPP_FEATURE_DESCRIPTION,
+} from '../lib/whatsappCopy'
 import { cn } from '../lib/cn'
 
 interface WhatsAppStatus {
@@ -73,8 +77,17 @@ export function WhatsAppBookingBanner() {
           ) : status?.connected ? (
             <>
               <Typography variant="body" className="mt-2 text-muted-foreground">
-                Message StayPilot on WhatsApp from your linked number{' '}
-                <span className="font-medium text-foreground">{status.phoneNumber}</span>
+                From your linked number{' '}
+                <span className="font-medium text-foreground">{status.phoneNumber}</span>, message
+                HostsLedger at{' '}
+                <a
+                  href={HOSTSLEDGER_WHATSAPP_WA_LINK}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-secondary hover:underline"
+                >
+                  {HOSTSLEDGER_WHATSAPP_NUMBER}
+                </a>
                 . Use one of these formats:
               </Typography>
               <div className="mt-3 flex flex-col gap-2">
