@@ -8,9 +8,13 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import {
   AuthBootstrap,
+  ForgotPasswordPage,
   LoginPage,
   OnboardingPage,
   RegisterPage,
+  ResetPasswordPage,
+  VerifyEmailGate,
+  VerifyEmailPage,
 } from './pages/auth/AuthPages'
 
 const LandingPage = lazy(() =>
@@ -62,17 +66,19 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token, sessionReady } = useAuth()
+  const { token, sessionReady, user } = useAuth()
   if (!sessionReady) return <PageLoader />
   if (!token) return <Navigate to="/login" replace />
+  if (user && !user.emailVerified) return <VerifyEmailGate />
   return children
 }
 
 /** Root: marketing landing for guests, dashboard for authenticated users. */
 function HomeRoute() {
-  const { token, sessionReady } = useAuth()
+  const { token, sessionReady, user } = useAuth()
   if (!sessionReady) return <PageLoader />
   if (!token) return <LandingPage />
+  if (user && !user.emailVerified) return <VerifyEmailGate />
   return <DashboardLayout />
 }
 
@@ -82,6 +88,9 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
         <Route path="/listings/:slug" element={<PublicListingPage />} />

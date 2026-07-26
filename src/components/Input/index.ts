@@ -1,4 +1,6 @@
 export { Input } from './Input'
+export { PasswordInput } from './PasswordInput'
 export { SearchInput } from './SearchInput'
 export type { InputProps } from './Input'
+export type { PasswordInputProps } from './PasswordInput'
 export type { SearchInputProps } from './SearchInput'

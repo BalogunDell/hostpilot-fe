@@ -1,7 +1,7 @@
 export { Button, buttonVariants } from './Button'
 export { Typography } from './Typography'
 export { Image } from './Image'
-export { Input, SearchInput } from './Input'
+export { Input, PasswordInput, SearchInput } from './Input'
 export { MoneyInput } from './MoneyInput'
 export { Select } from './Select'
 export { Checkbox } from './Checkbox'

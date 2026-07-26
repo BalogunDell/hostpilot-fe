@@ -21,6 +21,7 @@ export interface User {
   plan: UserPlan
   readOnly: boolean
   role: 'ADMIN' | 'COHOST'
+  emailVerified: boolean
   createdAt: string
 }
 

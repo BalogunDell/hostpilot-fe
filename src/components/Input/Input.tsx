@@ -1,4 +1,9 @@
-import { forwardRef, type InputHTMLAttributes, useId } from 'react'
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  useId,
+} from 'react'
 import { cn } from '../../lib/cn'
 import { Typography } from '../Typography'
 
@@ -6,10 +11,12 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
   helperText?: string
+  /** Optional control rendered inside the field on the right (e.g. a password toggle). */
+  rightElement?: ReactNode
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, label, error, helperText, id, rightElement, ...props }, ref) => {
     const generatedId = useId()
     const inputId = id ?? generatedId
     const helperId = `${inputId}-helper`
@@ -25,23 +32,31 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         ) : null}
-        <input
-          ref={ref}
-          id={inputId}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={
-            error ? errorId : helperText ? helperId : undefined
-          }
-          className={cn(
-            'flex h-10 w-full min-h-10 rounded-lg border border-input bg-card px-3 py-2 text-body text-foreground transition-colors',
-            'placeholder:text-muted-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-destructive focus-visible:ring-destructive',
-            className,
-          )}
-          {...props}
-        />
+        <div className="relative flex w-full items-center">
+          <input
+            ref={ref}
+            id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={
+              error ? errorId : helperText ? helperId : undefined
+            }
+            className={cn(
+              'flex h-10 w-full min-h-10 rounded-lg border border-input bg-card px-3 py-2 text-body text-foreground transition-colors',
+              'placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              error && 'border-destructive focus-visible:ring-destructive',
+              rightElement && 'pr-10',
+              className,
+            )}
+            {...props}
+          />
+          {rightElement ? (
+            <div className="absolute inset-y-0 right-1 flex items-center">
+              {rightElement}
+            </div>
+          ) : null}
+        </div>
         {error ? (
           <Typography
             as="span"
