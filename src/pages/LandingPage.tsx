@@ -11,18 +11,8 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
+import { LOGIN_URL, REGISTER_URL, SITE_URL } from '../lib/urls'
 import { buttonVariants } from '../components/Button'
-
-/* ------------------------------------------------------------------ */
-/* Domains                                                             */
-/* The marketing site (this build) is served at hostsledger.com, while */
-/* the app (auth + dashboard) lives on the app.hostsledger.com subdomain. */
-/* ------------------------------------------------------------------ */
-
-const APP_URL = import.meta.env.VITE_APP_URL ?? 'https://app.hostsledger.com'
-const SITE_URL = import.meta.env.VITE_SITE_URL ?? 'https://hostsledger.com'
-const REGISTER_URL = `${APP_URL}/register`
-const LOGIN_URL = `${APP_URL}/login`
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */

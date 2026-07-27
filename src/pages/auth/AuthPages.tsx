@@ -17,12 +17,13 @@ import { usePlanFeatures } from '../../hooks/usePlanFeatures'
 import {
   WHATSAPP_BUSINESS_PHONE_LABEL,
 } from '../../lib/whatsappCopy'
+import { SITE_URL } from '../../lib/urls'
 
 /** HostsLedger brand lockup shown on unauthenticated pages. */
 function AuthBrand() {
   return (
     <a
-      href="https://www.hostsledger.com"
+      href={SITE_URL}
       aria-label="HostsLedger home"
       className="mb-6 flex items-center justify-center gap-2.5"
     >

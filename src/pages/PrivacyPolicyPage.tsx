@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { BarChart3 } from 'lucide-react'
+import { SITE_URL } from '../lib/urls'
 
 const LAST_UPDATED = '26 July 2026'
 const CONTACT_EMAIL = 'privacy@hostsledger.com'
-const SITE_URL = import.meta.env.VITE_SITE_URL ?? 'https://hostsledger.com'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
