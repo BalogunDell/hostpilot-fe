@@ -22,6 +22,7 @@ import { buttonVariants } from '../components/Button'
 const APP_URL = import.meta.env.VITE_APP_URL ?? 'https://app.hostsledger.com'
 const SITE_URL = import.meta.env.VITE_SITE_URL ?? 'https://hostsledger.com'
 const REGISTER_URL = `${APP_URL}/register`
+const LOGIN_URL = `${APP_URL}/login`
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -254,6 +255,12 @@ export function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2.5">
+            <a
+              href={LOGIN_URL}
+              className="inline-flex text-sm font-medium text-primary-700 hover:text-foreground"
+            >
+              Log in
+            </a>
             <a href={REGISTER_URL} className={cn(darkBtn, 'hidden md:inline-flex')}>
               Start free
             </a>
@@ -286,7 +293,14 @@ export function LandingPage() {
             >
               Pricing
             </a>
-            <a href={REGISTER_URL} className={cn(darkBtn, 'mt-1.5 w-full')} onClick={() => setMenuOpen(false)}>
+            <a
+              href={LOGIN_URL}
+              className={cn(outlineBtn, 'mt-1.5 w-full')}
+              onClick={() => setMenuOpen(false)}
+            >
+              Log in
+            </a>
+            <a href={REGISTER_URL} className={cn(darkBtn, 'w-full')} onClick={() => setMenuOpen(false)}>
               Start free
             </a>
           </div>
