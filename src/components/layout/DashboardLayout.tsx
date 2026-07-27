@@ -55,7 +55,7 @@ function getPageMeta(pathname: string) {
   if (pathname.startsWith('/settings') || pathname.startsWith('/pricing')) {
     return { title: 'Settings', showSearch: false }
   }
-  return { title: 'StayPilot', searchPlaceholder: 'Search...' }
+  return { title: 'HostsLedger', searchPlaceholder: 'Search...' }
 }
 
 export function DashboardLayout() {
@@ -132,7 +132,7 @@ export function DashboardLayout() {
       >
         <div className="mb-6 flex items-start justify-between gap-2 px-2">
           <div>
-            <Typography variant="h3">StayPilot</Typography>
+            <Typography variant="h3">HostsLedger</Typography>
             <SidebarPlanPill />
           </div>
           <Button
@@ -178,7 +178,7 @@ export function DashboardLayout() {
               <Plane className="size-4" aria-hidden />
             </div>
             <Typography variant="h4" className="text-secondary">
-              StayPilot
+              HostsLedger
             </Typography>
           </div>
           <div className="flex items-center gap-1">

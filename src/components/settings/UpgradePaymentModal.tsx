@@ -161,7 +161,7 @@ export function UpgradePaymentModal({
       >
         <header className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <Typography id={titleId} variant="h3" className="text-primary-900">
-            StayPilot
+            HostsLedger
           </Typography>
           <Button
             variant="ghost"

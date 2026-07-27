@@ -152,7 +152,7 @@ export function AccountSettingsSection() {
         <div className="flex flex-col gap-3 border-t border-border pt-6">
           <Typography variant="h4">Delete account</Typography>
           <Typography variant="body" className="text-muted-foreground">
-            Permanently remove your account and all associated data from StayPilot.
+            Permanently remove your account and all associated data from HostsLedger.
           </Typography>
           <Button
             variant="destructive"

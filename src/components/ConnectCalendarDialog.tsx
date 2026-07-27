@@ -105,7 +105,7 @@ export function ConnectCalendarDialog({
       open={open}
       onClose={onClose}
       title="Connect calendar"
-      description="Import bookings from Airbnb or Bookings.com into StayPilot."
+      description="Import bookings from Airbnb or Bookings.com into HostsLedger."
       className="max-w-lg"
     >
       <div className="flex flex-col gap-4 border-t border-border pt-5">
