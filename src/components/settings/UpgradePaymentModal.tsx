@@ -1,11 +1,10 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
-import { Check, CircleHelp, CreditCard, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { getPlanDefinition, PLAN_LABELS, type PaidPlan, type UserPlan } from '@staypilot/shared'
-import { Button, Input, Typography } from '../index'
+import { Button, Typography } from '../index'
 import { ApiError, formatNaira } from '../../api/client'
-import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useApi } from '../../hooks/useApi'
 import { openPaystackCheckout } from '../../lib/paystack'
@@ -52,17 +51,9 @@ export function UpgradePaymentModal({
   onSuccess,
 }: UpgradePaymentModalProps) {
   const api = useApi()
-  const { user } = useAuth()
   const { showToast } = useToast()
   const titleId = useId()
-  const [cardholderName, setCardholderName] = useState(user?.name ?? '')
   const planDefinition = getPlanDefinition(targetPlan)
-
-  useEffect(() => {
-    if (user?.name) {
-      setCardholderName(user.name)
-    }
-  }, [user?.name])
 
   useEffect(() => {
     if (!open) return
@@ -135,14 +126,6 @@ export function UpgradePaymentModal({
 
   const isBusy = payMutation.isPending || verifyMutation.isPending
 
-  function handleCompletePayment() {
-    if (!cardholderName.trim()) {
-      showToast('Enter the cardholder name', 'error')
-      return
-    }
-    payMutation.mutate()
-  }
-
   if (!open) {
     return null
   }
@@ -156,12 +139,12 @@ export function UpgradePaymentModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+        className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <Typography id={titleId} variant="h3" className="text-primary-900">
-            HostsLedger
+            Upgrade to {planDefinition.name}
           </Typography>
           <Button
             variant="ghost"
@@ -174,109 +157,46 @@ export function UpgradePaymentModal({
           </Button>
         </header>
 
-        <div className="overflow-y-auto">
-          <div className="grid gap-0 lg:grid-cols-2 lg:divide-x lg:divide-border">
-            <section className="flex flex-col gap-5 p-6">
-              <Typography variant="h4">Order Summary</Typography>
-
-              <div>
-                <Typography variant="label" className="text-base">
-                  {planDefinition.name} Plan
-                </Typography>
-                <Typography variant="h2" className="mt-1 text-3xl">
-                  {formatNaira(planDefinition.priceNgn)}
-                  <span className="text-lg font-normal text-muted-foreground">/month</span>
-                </Typography>
-              </div>
-
-              <ul className="flex flex-col gap-3">
-                {planDefinition.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-tertiary-50 text-tertiary-600">
-                      <Check className="size-3" aria-hidden />
-                    </span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-auto border-t border-border pt-4">
-                <div className="flex items-center justify-between gap-4">
-                  <Typography variant="label">Total Due Today:</Typography>
-                  <Typography variant="h4">{formatNaira(planDefinition.priceNgn)}</Typography>
-                </div>
-              </div>
-            </section>
-
-            <section className="flex flex-col gap-4 border-t border-border p-6 lg:border-t-0">
-              <Typography variant="h4">Payment Details</Typography>
-
-              <Input
-                label="Cardholder Name"
-                value={cardholderName}
-                onChange={(event) => setCardholderName(event.target.value)}
-                placeholder="John Doe"
-                autoComplete="name"
-              />
-
-              <div className="relative">
-                <Input
-                  label="Card Number"
-                  placeholder="XXXX XXXX XXXX XXXX"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  readOnly
-                  onFocus={(event) => event.currentTarget.blur()}
-                  className="cursor-pointer pl-10"
-                  aria-describedby="paystack-card-note"
-                />
-                <CreditCard
-                  className="pointer-events-none absolute left-3 top-[2.125rem] size-4 text-muted-foreground"
-                  aria-hidden
-                />
-              </div>
-              <Typography id="paystack-card-note" variant="caption" className="-mt-2 text-muted-foreground">
-                Card, bank, and USSD payments are completed in Paystack&apos;s secure checkout.
+        <div className="overflow-y-auto p-6">
+          <div className="flex flex-col gap-5">
+            <div>
+              <Typography variant="h2" className="text-3xl">
+                {formatNaira(planDefinition.priceNgn)}
+                <span className="text-lg font-normal text-muted-foreground">/month</span>
               </Typography>
+              <Typography variant="caption" className="mt-1 block text-muted-foreground">
+                You’ll complete payment securely in Paystack (card, bank, or USSD).
+              </Typography>
+            </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Expiry Date"
-                  placeholder="MM / YY"
-                  autoComplete="cc-exp"
-                  readOnly
-                  onFocus={(event) => event.currentTarget.blur()}
-                  className="cursor-pointer"
-                />
-                <div className="relative">
-                  <Input
-                    label="CVV"
-                    placeholder="XXX"
-                    autoComplete="cc-csc"
-                    readOnly
-                    onFocus={(event) => event.currentTarget.blur()}
-                    className="cursor-pointer pr-10"
-                  />
-                  <CircleHelp
-                    className="pointer-events-none absolute right-3 top-[2.125rem] size-4 text-muted-foreground"
-                    aria-hidden
-                  />
-                </div>
-              </div>
+            <ul className="flex flex-col gap-3">
+              {planDefinition.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-3 text-sm">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-tertiary-50 text-tertiary-600">
+                    <Check className="size-3" aria-hidden />
+                  </span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
 
-              <PaystackBadge />
+            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
+              <Typography variant="label">Total due today</Typography>
+              <Typography variant="h4">{formatNaira(planDefinition.priceNgn)}</Typography>
+            </div>
 
-              <Button
-                variant="inverted"
-                size="lg"
-                className="mt-auto w-full"
-                allowWhenReadOnly
-                loading={isBusy}
-                onClick={handleCompletePayment}
-              >
-                Complete Payment
-              </Button>
-            </section>
+            <PaystackBadge />
+
+            <Button
+              variant="inverted"
+              size="lg"
+              className="w-full"
+              allowWhenReadOnly
+              loading={isBusy}
+              onClick={() => payMutation.mutate()}
+            >
+              Pay with Paystack
+            </Button>
           </div>
         </div>
       </div>
