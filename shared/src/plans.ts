@@ -18,30 +18,30 @@ export const PLAN_PROPERTY_LIMITS: Record<UserPlan, number> = {
   FREE: 1,
   STARTER: 1,
   GROWTH: 3,
-  PRO: 10,
+  PRO: 7,
 }
 
 /** Null = unlimited. Counted per calendar month. */
 export const PLAN_BOOKING_LIMITS: Record<UserPlan, number | null> = {
-  FREE: 2,
-  STARTER: 2,
-  GROWTH: 10,
+  FREE: 5,
+  STARTER: 5,
+  GROWTH: null,
   PRO: null,
 }
 
 /** Null = unlimited. Counted per calendar month. */
 export const PLAN_EXPENSE_LIMITS: Record<UserPlan, number | null> = {
-  FREE: 1,
-  STARTER: 1,
-  GROWTH: 5,
+  FREE: 5,
+  STARTER: 5,
+  GROWTH: null,
   PRO: null,
 }
 
 export const PLAN_PRICES_NGN: Record<UserPlan, number> = {
   FREE: 0,
   STARTER: 0,
-  GROWTH: 12_000,
-  PRO: 25_000,
+  GROWTH: 15_000,
+  PRO: 35_000,
 }
 
 export const PLAN_LABELS: Record<UserPlan, string> = {
@@ -51,16 +51,14 @@ export const PLAN_LABELS: Record<UserPlan, string> = {
   PRO: 'Pro',
 }
 
-export const STARTER_REVIEW_LINK_LIMIT = 3
-export const STARTER_PUBLIC_REVIEW_LIMIT = 3
+export const STARTER_REVIEW_LINK_LIMIT = 5
+export const STARTER_PUBLIC_REVIEW_LIMIT = 5
 
 /**
- * Free (Starter) plan gets a monthly taster of WhatsApp logging, tracked
- * separately from the manual booking/expense quotas. Paid plans log via
- * WhatsApp against their normal monthly quotas.
+ * @deprecated WhatsApp logging is Growth+ only. Kept for older callers.
  */
-export const FREE_WHATSAPP_MONTHLY_BOOKINGS = 1
-export const FREE_WHATSAPP_MONTHLY_EXPENSES = 1
+export const FREE_WHATSAPP_MONTHLY_BOOKINGS = 0
+export const FREE_WHATSAPP_MONTHLY_EXPENSES = 0
 
 export interface PlanDefinition {
   id: Exclude<UserPlan, 'FREE'>
@@ -76,58 +74,55 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
   {
     id: 'STARTER',
     name: 'Starter',
-    subtitle: 'Free',
+    subtitle: 'Start organizing your shortlet',
     priceNgn: 0,
     propertyLimit: 1,
     features: [
       '1 property',
-      'Up to 2 bookings per month',
-      'Up to 1 expense per month',
-      'Log 1 booking & 1 expense per month by WhatsApp',
-      'Check available dates for a month',
+      '5 bookings per month',
+      '5 expenses per month',
+      '5 guest review requests per month',
       'Manual booking & expense tracking',
       'Calendar view',
       'Basic income summary',
-      'Create up to 3 guest review links',
-      'Reviews published instantly (up to 3 on public page)',
+      'Public review page',
     ],
   },
   {
     id: 'GROWTH',
     name: 'Growth',
-    subtitle: 'Paid',
-    priceNgn: 12_000,
+    subtitle: 'Run your shortlet properly',
+    priceNgn: 15_000,
     propertyLimit: 3,
     recommended: true,
     features: [
       'Up to 3 properties',
-      'Up to 10 bookings per month',
-      'Up to 5 expenses per month',
-      'Log every booking & expense by WhatsApp',
-      'Check available dates for a month',
-      'Everything in Starter',
-      'Unlimited guest review links',
-      'Shareable public review pages',
-      'Reviews published instantly on submit',
-      'Monthly reports',
+      'Unlimited bookings & expenses',
+      'WhatsApp booking & expense logging',
+      'Automatic guest review requests',
+      'Monthly income & expense reports',
       'Property performance comparison',
+      'Export records',
+      'Everything in Starter',
     ],
   },
   {
     id: 'PRO',
     name: 'Pro',
-    subtitle: 'Paid',
-    priceNgn: 25_000,
-    propertyLimit: 10,
+    subtitle: 'Manage multiple properties and a team',
+    priceNgn: 35_000,
+    propertyLimit: 7,
     features: [
-      'Up to 10 properties',
+      'Up to 7 properties',
       'Unlimited bookings & expenses',
-      'Check available dates for a month',
-      'Everything in Growth',
-      'Co-host access',
-      'Hide reviews from your public page',
+      'Co-host / team access',
+      'Role-based access',
       'Portfolio dashboard',
+      'Advanced reports',
+      'Review moderation',
+      'Custom branded public page',
       'Priority support',
+      'Everything in Growth',
     ],
   },
 ] as const
@@ -169,7 +164,9 @@ export function getExpenseLimit(plan: UserPlan | string): number | null {
   return PLAN_EXPENSE_LIMITS[normalizeUserPlan(plan)]
 }
 
-export function hasMonthAvailabilityCheck(_plan?: UserPlan | string): boolean {
+export function hasMonthAvailabilityCheck(plan?: UserPlan | string): boolean {
+  // Available via WhatsApp on Growth+; in-app calendar remains available to all.
+  if (plan == null) return true
   return true
 }
 
@@ -195,8 +192,8 @@ export function canHideReviews(plan: UserPlan | string): boolean {
   return normalizeUserPlan(plan) === 'PRO'
 }
 
-export function hasShareablePublicReviewPages(plan: UserPlan | string): boolean {
-  return comparePlans(plan, 'GROWTH') >= 0
+export function hasShareablePublicReviewPages(_plan?: UserPlan | string): boolean {
+  return true
 }
 
 export function hasCoHostReviewApproval(plan: UserPlan | string): boolean {
@@ -207,13 +204,10 @@ export function hasPortfolioDashboard(plan: UserPlan | string): boolean {
   return normalizeUserPlan(plan) === 'PRO'
 }
 
-/**
- * WhatsApp logging is available on every plan. Free users get a small monthly
- * allowance (see FREE_WHATSAPP_MONTHLY_BOOKINGS / _EXPENSES); paid plans log
- * against their normal monthly quotas.
- */
-export function hasWhatsAppAutomation(_plan?: UserPlan | string): boolean {
-  return true
+/** WhatsApp logging & bot reports are available on Growth and above. */
+export function hasWhatsAppAutomation(plan?: UserPlan | string): boolean {
+  if (plan == null) return false
+  return comparePlans(plan, 'GROWTH') >= 0
 }
 
 export function hasCalendarSync(plan: UserPlan | string): boolean {
