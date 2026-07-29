@@ -54,11 +54,14 @@ export const PLAN_LABELS: Record<UserPlan, string> = {
 export const STARTER_REVIEW_LINK_LIMIT = 5
 export const STARTER_PUBLIC_REVIEW_LIMIT = 5
 
+/** Starter plan: one successful WhatsApp action (any kind) per calendar month. */
+export const FREE_WHATSAPP_MONTHLY_QUERIES = 1
+
 /**
- * @deprecated WhatsApp logging is Growth+ only. Kept for older callers.
+ * @deprecated Prefer FREE_WHATSAPP_MONTHLY_QUERIES — kept for older callers.
  */
-export const FREE_WHATSAPP_MONTHLY_BOOKINGS = 0
-export const FREE_WHATSAPP_MONTHLY_EXPENSES = 0
+export const FREE_WHATSAPP_MONTHLY_BOOKINGS = FREE_WHATSAPP_MONTHLY_QUERIES
+export const FREE_WHATSAPP_MONTHLY_EXPENSES = FREE_WHATSAPP_MONTHLY_QUERIES
 
 export interface PlanDefinition {
   id: Exclude<UserPlan, 'FREE'>
@@ -82,6 +85,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       '5 bookings per month',
       '5 expenses per month',
       '5 guest review requests per month',
+      '1 WhatsApp query per month',
       'Manual booking & expense tracking',
       'Calendar view',
       'Basic income summary',
@@ -98,7 +102,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     features: [
       'Up to 3 properties',
       'Unlimited bookings & expenses',
-      'WhatsApp booking & expense logging',
+      'Unlimited WhatsApp booking & expense logging',
       'Automatic guest review requests',
       'Monthly income & expense reports',
       'Property performance comparison',
@@ -204,10 +208,14 @@ export function hasPortfolioDashboard(plan: UserPlan | string): boolean {
   return normalizeUserPlan(plan) === 'PRO'
 }
 
-/** WhatsApp logging & bot reports are available on Growth and above. */
-export function hasWhatsAppAutomation(plan?: UserPlan | string): boolean {
-  if (plan == null) return false
-  return comparePlans(plan, 'GROWTH') >= 0
+/** WhatsApp bot is available on all plans; Starter is limited to 1 query/month. */
+export function hasWhatsAppAutomation(_plan?: UserPlan | string): boolean {
+  return true
+}
+
+export function getWhatsAppMonthlyQueryLimit(plan?: UserPlan | string): number | null {
+  if (plan == null) return FREE_WHATSAPP_MONTHLY_QUERIES
+  return isFreePlan(plan) ? FREE_WHATSAPP_MONTHLY_QUERIES : null
 }
 
 export function hasCalendarSync(plan: UserPlan | string): boolean {

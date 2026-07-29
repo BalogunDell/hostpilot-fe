@@ -30,6 +30,8 @@ export {
   canHideReviews,
   FREE_WHATSAPP_MONTHLY_BOOKINGS,
   FREE_WHATSAPP_MONTHLY_EXPENSES,
+  FREE_WHATSAPP_MONTHLY_QUERIES,
+  getWhatsAppMonthlyQueryLimit,
   hasShareablePublicReviewPages,
   hasUnlimitedReviewLinks,
   hasWhatsAppAutomation,
