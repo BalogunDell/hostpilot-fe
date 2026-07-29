@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, type ErrorInfo, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { PageLoaderSkeleton } from './components/Skeleton'
@@ -17,7 +17,11 @@ import {
   VerifyEmailPage,
 } from './pages/auth/AuthPages'
 import { Button, Typography } from './components'
+import { appHref, isMarketingHost } from './lib/urls'
 
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+)
 const PrivacyPolicyPage = lazy(() =>
   import('./pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })),
 )
@@ -61,6 +65,18 @@ const queryClient = new QueryClient({
 
 function PageLoader() {
   return <PageLoaderSkeleton />
+}
+
+/** Hard navigation to the app origin (cross-subdomain). */
+function RedirectToApp({ path }: { path?: string }) {
+  const location = useLocation()
+  const target = appHref(path ?? `${location.pathname}${location.search}${location.hash}`)
+
+  useEffect(() => {
+    window.location.replace(target)
+  }, [target])
+
+  return <PageLoader />
 }
 
 class RouteErrorBoundary extends Component<
@@ -110,8 +126,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return children
 }
 
-/** App home: dashboard when signed in, otherwise login (marketing lives on hostsledger.com). */
-function HomeRoute() {
+/** App home on app.hostsledger.com: dashboard when signed in, otherwise login. */
+function AppHomeRoute() {
   const { token, sessionReady, user } = useAuth()
   if (!sessionReady) return <PageLoader />
   if (!token || !user) return <Navigate to="/login" replace />
@@ -119,44 +135,83 @@ function HomeRoute() {
   return <DashboardLayout />
 }
 
+function MarketingRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      {/* Auth + product routes live on the app subdomain */}
+      <Route path="/login" element={<RedirectToApp path="/login" />} />
+      <Route path="/register" element={<RedirectToApp path="/register" />} />
+      <Route path="/forgot-password" element={<RedirectToApp path="/forgot-password" />} />
+      <Route path="/reset-password/:token" element={<RedirectToApp />} />
+      <Route path="/verify-email/:token" element={<RedirectToApp />} />
+      <Route path="/onboarding" element={<RedirectToApp path="/onboarding" />} />
+      <Route path="/properties/*" element={<RedirectToApp />} />
+      <Route path="/bookings" element={<RedirectToApp path="/bookings" />} />
+      <Route path="/calendar" element={<RedirectToApp path="/calendar" />} />
+      <Route path="/settings/*" element={<RedirectToApp />} />
+      <Route path="/pricing" element={<RedirectToApp path="/settings" />} />
+      <Route path="/cohost-invite/:token" element={<RedirectToApp />} />
+      <Route path="/listings/:slug" element={<RedirectToApp />} />
+      <Route path="/review/:token" element={<RedirectToApp />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
+function AppProductRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
+      <Route path="/listings/:slug" element={<PublicListingPage />} />
+      <Route path="/review/:token" element={<ReviewSubmitPage />} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<AppHomeRoute />}>
+        <Route index element={<OverviewPage />} />
+        <Route path="properties" element={<PropertiesPage />} />
+        <Route path="properties/:id" element={<PropertyDetailPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="pricing" element={<Navigate to="/settings" replace />} />
+        <Route path="settings/pricing" element={<Navigate to="/settings" replace />} />
+        <Route path="settings/team" element={<Navigate to="/settings#team" replace />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 function AppRoutes() {
+  const marketing = isMarketingHost()
+
   return (
     <RouteErrorBoundary>
       <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
-          <Route path="/listings/:slug" element={<PublicListingPage />} />
-          <Route path="/review/:token" element={<ReviewSubmitPage />} />
-          <Route
-            path="/onboarding"
-            element={
-              <ProtectedRoute>
-                <OnboardingPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<HomeRoute />}>
-            <Route index element={<OverviewPage />} />
-            <Route path="properties" element={<PropertiesPage />} />
-            <Route path="properties/:id" element={<PropertyDetailPage />} />
-            <Route path="bookings" element={<BookingsPage />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="pricing" element={<Navigate to="/settings" replace />} />
-            <Route path="settings/pricing" element={<Navigate to="/settings" replace />} />
-            <Route path="settings/team" element={<Navigate to="/settings#team" replace />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        {marketing ? <MarketingRoutes /> : <AppProductRoutes />}
       </Suspense>
     </RouteErrorBoundary>
   )
+}
+
+/** Skip session restore chrome on the public marketing site. */
+function HostAwareBootstrap({ children }: { children: ReactNode }) {
+  if (isMarketingHost()) return children
+  return <AuthBootstrap>{children}</AuthBootstrap>
 }
 
 export default function App() {
@@ -166,9 +221,9 @@ export default function App() {
         <AppProvider>
           <ToastProvider>
             <BrowserRouter>
-              <AuthBootstrap>
+              <HostAwareBootstrap>
                 <AppRoutes />
-              </AuthBootstrap>
+              </HostAwareBootstrap>
             </BrowserRouter>
           </ToastProvider>
         </AppProvider>
