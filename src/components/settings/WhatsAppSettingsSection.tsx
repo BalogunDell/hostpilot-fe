@@ -144,7 +144,7 @@ export function WhatsAppSettingsSection() {
       {plan === 'STARTER' ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">
           <Typography variant="body" className="text-muted-foreground">
-            Your free plan includes 1 WhatsApp query per month.{' '}
+            Your free plan includes 1 WhatsApp booking or expense log per month.{' '}
             <AppLink to="/settings#pricing" className="font-medium text-secondary hover:underline">
               Upgrade to Growth
             </AppLink>{' '}

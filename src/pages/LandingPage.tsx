@@ -78,7 +78,7 @@ const PLANS = [
       '5 bookings per month',
       '5 expenses per month',
       '5 guest review requests per month',
-      '1 WhatsApp query per month',
+      '1 WhatsApp booking or expense log per month',
       'Manual booking & expense tracking',
       'Calendar view',
       'Basic income summary',
