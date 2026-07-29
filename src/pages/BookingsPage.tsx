@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { differenceInCalendarDays, isWithinInterval, parseISO, startOfMonth, endOfMonth } from 'date-fns'
+import {
+  differenceInCalendarDays,
+  endOfMonth,
+  format,
+  isWithinInterval,
+  parseISO,
+  startOfMonth,
+} from 'date-fns'
 import { Copy, Download, MoreVertical, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -42,6 +49,14 @@ interface Booking {
   checkOut: string
   amount: number
   source: string
+}
+
+interface Expense {
+  id: string
+  propertyId: string
+  category: string
+  amount: number
+  expenseDate: string
 }
 
 interface Property {
@@ -320,6 +335,36 @@ export function BookingsPage() {
     enabled: Boolean(token && (properties.length === 0 || propertyFilter)),
   })
 
+  const monthRange = useMemo(() => {
+    const now = new Date()
+    return {
+      from: format(startOfMonth(now), 'yyyy-MM-dd'),
+      to: format(endOfMonth(now), 'yyyy-MM-dd'),
+      start: startOfMonth(now),
+      end: endOfMonth(now),
+    }
+  }, [])
+
+  const { data: monthBookingsData } = useQuery({
+    queryKey: ['bookings', 'month-revenue', propertyFilter, monthRange.from, monthRange.to],
+    queryFn: () =>
+      apiRequestPaginated<Booking>(
+        `/bookings?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        { token },
+      ),
+    enabled: Boolean(token && propertyFilter),
+  })
+
+  const { data: monthExpensesData } = useQuery({
+    queryKey: ['expenses', 'month', propertyFilter, monthRange.from, monthRange.to],
+    queryFn: () =>
+      apiRequestPaginated<Expense>(
+        `/expenses?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        { token },
+      ),
+    enabled: Boolean(token && propertyFilter),
+  })
+
   const { data: propertyBookingsData } = useQuery({
     queryKey: ['bookings', 'property', propertyId],
     queryFn: () =>
@@ -403,24 +448,41 @@ export function BookingsPage() {
   const stats = useMemo(() => {
     const rows = data?.data ?? []
     const now = new Date()
-    const monthStart = startOfMonth(now)
-    const monthEnd = endOfMonth(now)
 
     const active = rows.filter((b) =>
       isWithinInterval(now, { start: parseISO(b.checkIn), end: parseISO(b.checkOut) }),
     ).length
 
-    const monthlyRevenue = rows
-      .filter((b) => isWithinInterval(parseISO(b.checkIn), { start: monthStart, end: monthEnd }))
+    const monthBookings = monthBookingsData?.data ?? []
+    const monthlyGross = monthBookings
+      .filter((b) =>
+        isWithinInterval(parseISO(b.checkIn), {
+          start: monthRange.start,
+          end: monthRange.end,
+        }),
+      )
       .reduce((sum, b) => sum + b.amount, 0)
+
+    const monthlyExpenses = (monthExpensesData?.data ?? []).reduce(
+      (sum, expense) => sum + expense.amount,
+      0,
+    )
+    const monthlyRevenue = monthlyGross - monthlyExpenses
 
     const avgStay =
       rows.length > 0
         ? rows.reduce((sum, b) => sum + stayNights(b.checkIn, b.checkOut), 0) / rows.length
         : 0
 
-    return { active, monthlyRevenue, avgStay, total: data?.meta.total ?? 0 }
-  }, [data])
+    return {
+      active,
+      monthlyGross,
+      monthlyExpenses,
+      monthlyRevenue,
+      avgStay,
+      total: data?.meta.total ?? 0,
+    }
+  }, [data, monthBookingsData?.data, monthExpensesData?.data, monthRange])
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -496,7 +558,15 @@ export function BookingsPage() {
           value={String(stats.active)}
           subtext={`${stats.total} total on record`}
         />
-        <StatCard label="Monthly revenue" value={formatNaira(stats.monthlyRevenue)} />
+        <StatCard
+          label="Monthly revenue"
+          value={formatNaira(stats.monthlyRevenue)}
+          subtext={
+            stats.monthlyExpenses > 0
+              ? `${formatNaira(stats.monthlyExpenses)} expenses deducted`
+              : 'No expenses deducted this month'
+          }
+        />
         <StatCard
           label="Avg. stay length"
           value={`${stats.avgStay.toFixed(1)} nights`}
