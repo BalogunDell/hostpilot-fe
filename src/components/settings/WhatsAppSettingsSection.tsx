@@ -21,6 +21,13 @@ interface WhatsAppStatus {
   verifiedAt: string | null
 }
 
+interface RequestVerificationResult extends WhatsAppStatus {
+  verificationSent?: boolean
+  expiresInSeconds?: number
+}
+
+type Step = 'phone' | 'code'
+
 export function WhatsAppSettingsSection() {
   const api = useApi()
   const { user } = useAuth()
@@ -28,6 +35,9 @@ export function WhatsAppSettingsSection() {
   const queryClient = useQueryClient()
   const { hasWhatsApp, plan } = usePlanFeatures()
   const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState<Step>('phone')
+  const [pendingPhone, setPendingPhone] = useState('')
   const [formError, setFormError] = useState('')
 
   const { data: status, isLoading } = useQuery({
@@ -36,17 +46,26 @@ export function WhatsAppSettingsSection() {
     enabled: Boolean(user) && hasWhatsApp,
   })
 
-  const linkMutation = useMutation({
-    mutationFn: () =>
-      api<WhatsAppStatus>('/whatsapp/link', {
+  const requestMutation = useMutation({
+    mutationFn: (phoneNumber: string) =>
+      api<RequestVerificationResult>('/whatsapp/link/request', {
         method: 'POST',
-        body: JSON.stringify({ phoneNumber: phone }),
+        body: JSON.stringify({ phoneNumber }),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] })
-      setPhone('')
+    onSuccess: (result, phoneNumber) => {
       setFormError('')
-      showToast('WhatsApp Business number linked')
+      if (result.connected) {
+        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] })
+        setPhone('')
+        setCode('')
+        setStep('phone')
+        showToast('WhatsApp Business number already connected')
+        return
+      }
+      setPendingPhone(result.phoneNumber || phoneNumber)
+      setStep('code')
+      setCode('')
+      showToast('Verification code sent to WhatsApp')
     },
     onError: (error) => {
       const message =
@@ -54,19 +73,61 @@ export function WhatsAppSettingsSection() {
           ? error.message
           : error instanceof Error
             ? error.message
-            : 'Failed to link WhatsApp'
+            : 'Failed to send verification code'
       setFormError(message)
     },
   })
 
-  function handleLink() {
+  const confirmMutation = useMutation({
+    mutationFn: () =>
+      api<WhatsAppStatus>('/whatsapp/link/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ phoneNumber: pendingPhone, code }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] })
+      setPhone('')
+      setCode('')
+      setPendingPhone('')
+      setStep('phone')
+      setFormError('')
+      showToast('WhatsApp Business number verified and connected')
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Failed to verify code'
+      setFormError(message)
+    },
+  })
+
+  function handleRequestCode() {
     if (!hasWhatsApp) return
     if (!phone.trim()) {
       setFormError('Enter your WhatsApp Business phone number')
       return
     }
     setFormError('')
-    linkMutation.mutate()
+    requestMutation.mutate(phone.trim())
+  }
+
+  function handleConfirmCode() {
+    if (!code.trim()) {
+      setFormError('Enter the 6-digit code from WhatsApp')
+      return
+    }
+    setFormError('')
+    confirmMutation.mutate()
+  }
+
+  function handleChangeNumber() {
+    setStep('phone')
+    setCode('')
+    setPendingPhone('')
+    setFormError('')
   }
 
   return (
@@ -119,6 +180,48 @@ export function WhatsAppSettingsSection() {
               to add bookings and expenses.
             </Typography>
           </div>
+        ) : step === 'code' ? (
+          <div className="flex flex-col gap-4">
+            <Typography variant="body" className="text-muted-foreground">
+              We sent a 6-digit code to{' '}
+              <span className="font-medium text-foreground">{pendingPhone}</span> on WhatsApp.
+              Enter it below to finish connecting.
+            </Typography>
+            <Input
+              label="Verification code"
+              placeholder="123456"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              disabled={!hasWhatsApp}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            {formError ? (
+              <Typography variant="caption" className="text-destructive">
+                {formError}
+              </Typography>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                loading={confirmMutation.isPending}
+                disabled={!hasWhatsApp || code.trim().length !== 6}
+                onClick={handleConfirmCode}
+              >
+                Verify & connect
+              </Button>
+              <Button
+                variant="secondary"
+                loading={requestMutation.isPending}
+                disabled={!hasWhatsApp}
+                onClick={() => requestMutation.mutate(pendingPhone)}
+              >
+                Resend code
+              </Button>
+              <Button variant="ghost" disabled={confirmMutation.isPending} onClick={handleChangeNumber}>
+                Change number
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <Input
@@ -128,6 +231,9 @@ export function WhatsAppSettingsSection() {
               disabled={!hasWhatsApp}
               onChange={(event) => setPhone(event.target.value)}
             />
+            <Typography variant="caption" className="text-muted-foreground">
+              We’ll send a verification code to this WhatsApp number to confirm you own it.
+            </Typography>
             {formError ? (
               <Typography variant="caption" className="text-destructive">
                 {formError}
@@ -135,11 +241,11 @@ export function WhatsAppSettingsSection() {
             ) : null}
             <Button
               className="self-start"
-              loading={linkMutation.isPending}
+              loading={requestMutation.isPending}
               disabled={!hasWhatsApp || !phone.trim()}
-              onClick={handleLink}
+              onClick={handleRequestCode}
             >
-              Connect WhatsApp Business
+              Send verification code
             </Button>
           </div>
         )}
