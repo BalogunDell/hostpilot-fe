@@ -139,7 +139,7 @@ export function WhatsAppSettingsSection() {
         </Typography>
       </div>
 
-      <WhatsAppBusinessInfoBanner />
+      {!status?.connected ? <WhatsAppBusinessInfoBanner /> : null}
 
       {plan === 'STARTER' ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">

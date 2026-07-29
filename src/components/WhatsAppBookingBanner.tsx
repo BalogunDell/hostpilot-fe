@@ -18,12 +18,6 @@ interface WhatsAppStatus {
   verifiedAt: string | null
 }
 
-const COMMAND_EXAMPLES = [
-  'Booking: Ada Okonkwo, Starter Host Apartment, July 10–15, 180000, Airbnb',
-  'Expense: Cleaning, Starter Host Apartment, 15000',
-  'Available: Starter Host Apartment, July 2026',
-]
-
 export function WhatsAppBookingBanner() {
   const api = useApi()
   const { user } = useAuth()
@@ -34,6 +28,8 @@ export function WhatsAppBookingBanner() {
     queryFn: () => api<WhatsAppStatus>('/whatsapp/status'),
     enabled: Boolean(user) && hasWhatsApp,
   })
+
+  const isConnected = Boolean(status?.connected && status.phoneNumber)
 
   return (
     <Card
@@ -55,62 +51,49 @@ export function WhatsAppBookingBanner() {
 
         <div className="min-w-0 flex-1 flex flex-col gap-3">
           <Typography variant="label">Add bookings through WhatsApp</Typography>
-          <WhatsAppBusinessInfoBanner />
 
           {!hasWhatsApp ? (
             <>
-              <Typography variant="body" className="mt-2 text-muted-foreground">
+              <WhatsAppBusinessInfoBanner />
+              <Typography variant="body" className="text-muted-foreground">
                 {WHATSAPP_FEATURE_DESCRIPTION} Upgrade to Growth to connect WhatsApp and log
                 bookings by message.
               </Typography>
               <AppLink
                 to="/settings#pricing"
-                className="mt-3 inline-flex text-sm font-medium text-secondary hover:underline"
+                className="inline-flex text-sm font-medium text-secondary hover:underline"
               >
                 Upgrade to Growth
               </AppLink>
             </>
           ) : isLoading ? (
-            <Typography variant="caption" className="mt-2 block text-muted-foreground">
+            <Typography variant="caption" className="text-muted-foreground">
               Checking WhatsApp connection…
             </Typography>
-          ) : status?.connected ? (
-            <>
-              <Typography variant="body" className="mt-2 text-muted-foreground">
-                From your linked number{' '}
-                <span className="font-medium text-foreground">{status.phoneNumber}</span>, message
-                HostsLedger at{' '}
-                <a
-                  href={HOSTSLEDGER_WHATSAPP_WA_LINK}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-secondary hover:underline"
-                >
-                  {HOSTSLEDGER_WHATSAPP_NUMBER}
-                </a>
-                . Use one of these formats:
-              </Typography>
-              <div className="mt-3 flex flex-col gap-2">
-                {COMMAND_EXAMPLES.map((example) => (
-                  <Typography
-                    key={example}
-                    variant="caption"
-                    className="block rounded-lg border border-border bg-card px-3 py-2 font-mono text-xs text-foreground"
-                  >
-                    {example}
-                  </Typography>
-                ))}
-              </div>
-            </>
+          ) : isConnected ? (
+            <Typography variant="body" className="text-muted-foreground">
+              Linked as{' '}
+              <span className="font-medium text-foreground">{status!.phoneNumber}</span>. Message{' '}
+              <a
+                href={HOSTSLEDGER_WHATSAPP_WA_LINK}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-secondary hover:underline"
+              >
+                {HOSTSLEDGER_WHATSAPP_NUMBER}
+              </a>{' '}
+              with Hi or Menu to get started.
+            </Typography>
           ) : (
             <>
-              <Typography variant="body" className="mt-2 text-muted-foreground">
+              <WhatsAppBusinessInfoBanner />
+              <Typography variant="body" className="text-muted-foreground">
                 Connect your WhatsApp Business number to log bookings by message instead of
                 adding them manually.
               </Typography>
               <AppLink
                 to="/settings#whatsapp"
-                className="mt-3 inline-flex text-sm font-medium text-secondary hover:underline"
+                className="inline-flex text-sm font-medium text-secondary hover:underline"
               >
                 Connect WhatsApp in Settings
               </AppLink>
