@@ -1,20 +1,36 @@
-import { useEffect, useId } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { Check, X } from 'lucide-react'
-import { getPlanDefinition, PLAN_LABELS, type PaidPlan, type UserPlan } from '@staypilot/shared'
+import {
+  BILLING_INTERVALS,
+  BILLING_INTERVAL_LABELS,
+  BILLING_INTERVAL_MONTHS,
+  getBillingSavingsPercent,
+  getPlanCheckoutPriceNgn,
+  getPlanDefinition,
+  getPlanFullPrepaidPriceNgn,
+  PLAN_LABELS,
+  type BillingInterval,
+  type PaidPlan,
+  type UserPlan,
+} from '@staypilot/shared'
 import { Button, Typography } from '../index'
 import { ApiError, formatNaira } from '../../api/client'
 import { useToast } from '../../context/ToastContext'
 import { useApi } from '../../hooks/useApi'
+import { cn } from '../../lib/cn'
 import { openPaystackCheckout } from '../../lib/paystack'
 
 interface CheckoutSession {
   plan: PaidPlan
+  interval: BillingInterval
+  months: number
   publicKey: string
   email: string
   amountKobo: number
   amountNgn: number
+  monthlyPriceNgn: number
   currency: 'NGN'
   reference: string
   accessCode: string
@@ -54,6 +70,12 @@ export function UpgradePaymentModal({
   const { showToast } = useToast()
   const titleId = useId()
   const planDefinition = getPlanDefinition(targetPlan)
+  const [interval, setInterval] = useState<BillingInterval>('monthly')
+
+  useEffect(() => {
+    if (!open) return
+    setInterval('monthly')
+  }, [open, targetPlan])
 
   useEffect(() => {
     if (!open) return
@@ -67,6 +89,17 @@ export function UpgradePaymentModal({
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [open, onClose])
+
+  const checkoutTotal = useMemo(
+    () => getPlanCheckoutPriceNgn(targetPlan, interval),
+    [targetPlan, interval],
+  )
+  const fullTotal = useMemo(
+    () => getPlanFullPrepaidPriceNgn(targetPlan, interval),
+    [targetPlan, interval],
+  )
+  const savingsPercent = getBillingSavingsPercent(interval)
+  const months = BILLING_INTERVAL_MONTHS[interval]
 
   const verifyMutation = useMutation({
     mutationFn: (reference: string) =>
@@ -93,7 +126,7 @@ export function UpgradePaymentModal({
     mutationFn: () =>
       api<CheckoutSession>('/payments/initialize', {
         method: 'POST',
-        body: JSON.stringify({ plan: targetPlan }),
+        body: JSON.stringify({ plan: targetPlan, interval }),
       }),
     onSuccess: async (checkout) => {
       try {
@@ -165,9 +198,53 @@ export function UpgradePaymentModal({
                 <span className="text-lg font-normal text-muted-foreground">/month</span>
               </Typography>
               <Typography variant="caption" className="mt-1 block text-muted-foreground">
-                You’ll complete payment securely in Paystack (card, bank, or USSD).
+                One-time payment for the period you choose. No automatic renewal.
               </Typography>
             </div>
+
+            <fieldset className="flex flex-col gap-2">
+              <Typography variant="label" className="text-sm">
+                Billing period
+              </Typography>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {BILLING_INTERVALS.map((option) => {
+                  const optionTotal = getPlanCheckoutPriceNgn(targetPlan, option)
+                  const optionSavings = getBillingSavingsPercent(option)
+                  const selected = interval === option
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => setInterval(option)}
+                      className={cn(
+                        'rounded-lg border px-3 py-3 text-left transition',
+                        selected
+                          ? 'border-secondary bg-secondary/5 ring-1 ring-secondary/30'
+                          : 'border-border hover:border-secondary/40',
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">
+                          {BILLING_INTERVAL_LABELS[option]}
+                        </span>
+                        {optionSavings > 0 ? (
+                          <span className="rounded-full bg-secondary-100 px-1.5 py-0.5 text-[10px] font-semibold text-secondary">
+                            Save {optionSavings}%
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-1 text-sm font-medium">{formatNaira(optionTotal)}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {BILLING_INTERVAL_MONTHS[option] === 1
+                          ? '1 month access'
+                          : `${BILLING_INTERVAL_MONTHS[option]} months access`}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
 
             <ul className="flex flex-col gap-3">
               {planDefinition.features.map((feature) => (
@@ -180,9 +257,20 @@ export function UpgradePaymentModal({
               ))}
             </ul>
 
-            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
-              <Typography variant="label">Total due today</Typography>
-              <Typography variant="h4">{formatNaira(planDefinition.priceNgn)}</Typography>
+            <div className="flex flex-col gap-1 border-t border-border pt-4">
+              <div className="flex items-center justify-between gap-4">
+                <Typography variant="label">Total due today</Typography>
+                <Typography variant="h4">{formatNaira(checkoutTotal)}</Typography>
+              </div>
+              {savingsPercent > 0 ? (
+                <Typography variant="caption" className="text-right text-muted-foreground">
+                  Was {formatNaira(fullTotal)} · you save {savingsPercent}% for {months} months
+                </Typography>
+              ) : (
+                <Typography variant="caption" className="text-right text-muted-foreground">
+                  Covers {months === 1 ? '1 month' : `${months} months`} of {planDefinition.name}
+                </Typography>
+              )}
             </div>
 
             <PaystackBadge />

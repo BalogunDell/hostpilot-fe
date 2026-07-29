@@ -3,9 +3,37 @@ export type UserPlan = 'FREE' | 'STARTER' | 'GROWTH' | 'PRO'
 
 export type PaidPlan = 'GROWTH' | 'PRO'
 
+/** Prepaid one-time billing periods (not Paystack recurring subscriptions). */
+export type BillingInterval = 'monthly' | 'biannual' | 'annual'
+
 export const USER_PLANS = ['FREE', 'STARTER', 'GROWTH', 'PRO'] as const satisfies readonly UserPlan[]
 
 export const PAID_PLANS = ['GROWTH', 'PRO'] as const satisfies readonly PaidPlan[]
+
+export const BILLING_INTERVALS = [
+  'monthly',
+  'biannual',
+  'annual',
+] as const satisfies readonly BillingInterval[]
+
+export const BILLING_INTERVAL_MONTHS: Record<BillingInterval, number> = {
+  monthly: 1,
+  biannual: 6,
+  annual: 12,
+}
+
+/** Discount off full prepaid total (monthly × months). */
+export const BILLING_INTERVAL_DISCOUNT: Record<BillingInterval, number> = {
+  monthly: 0,
+  biannual: 0.005,
+  annual: 0.015,
+}
+
+export const BILLING_INTERVAL_LABELS: Record<BillingInterval, string> = {
+  monthly: 'Monthly',
+  biannual: 'Every 6 months',
+  annual: 'Yearly',
+}
 
 export const PLAN_RANK: Record<UserPlan, number> = {
   FREE: 0,
@@ -249,6 +277,26 @@ export function hasPropertyComparison(plan: UserPlan | string): boolean {
 
 export function getPlanPriceNgn(plan: PaidPlan): number {
   return PLAN_PRICES_NGN[plan]
+}
+
+/** Discount percent shown in UI (e.g. annual → 1.5). */
+export function getBillingSavingsPercent(interval: BillingInterval): number {
+  return BILLING_INTERVAL_DISCOUNT[interval] * 100
+}
+
+/** Full prepaid total before discount (monthly × months). */
+export function getPlanFullPrepaidPriceNgn(plan: PaidPlan, interval: BillingInterval): number {
+  return PLAN_PRICES_NGN[plan] * BILLING_INTERVAL_MONTHS[interval]
+}
+
+/**
+ * One-time checkout total in NGN for a prepaid interval.
+ * Annual: monthly × 12 − 1.5%. Bi-annual: monthly × 6 − 0.5%.
+ */
+export function getPlanCheckoutPriceNgn(plan: PaidPlan, interval: BillingInterval): number {
+  const full = getPlanFullPrepaidPriceNgn(plan, interval)
+  const discount = BILLING_INTERVAL_DISCOUNT[interval]
+  return Math.round(full * (1 - discount))
 }
 
 export function getPlanDefinition(plan: UserPlan): PlanDefinition {

@@ -8,10 +8,17 @@ export {
 } from './featureFlags.js'
 
 export {
+  BILLING_INTERVALS,
+  BILLING_INTERVAL_DISCOUNT,
+  BILLING_INTERVAL_LABELS,
+  BILLING_INTERVAL_MONTHS,
   comparePlans,
+  getBillingSavingsPercent,
   getBookingLimit,
   getExpenseLimit,
+  getPlanCheckoutPriceNgn,
   getPlanDefinition,
+  getPlanFullPrepaidPriceNgn,
   getPlanPriceNgn,
   getPropertyLimit,
   getReviewLinkLimit,
@@ -50,6 +57,7 @@ export {
   STARTER_PUBLIC_REVIEW_LIMIT,
   STARTER_REVIEW_LINK_LIMIT,
   USER_PLANS,
+  type BillingInterval,
   type PaidPlan,
   type PlanDefinition,
 } from './plans.js'
