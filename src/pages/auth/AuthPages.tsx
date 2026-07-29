@@ -638,12 +638,30 @@ export function VerifyEmailGate() {
 }
 
 export function AuthBootstrap({ children }: { children: ReactNode }) {
-  const { sessionReady } = useAuth()
+  const { sessionReady, token, user, restoreError, restoreSession, logout } = useAuth()
 
   if (!sessionReady) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-background">
         <Typography>Loading...</Typography>
+      </div>
+    )
+  }
+
+  // Token present but profile failed to load — avoid an empty dashboard shell.
+  if (token && !user) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background px-4">
+        <Typography variant="h3">Couldn’t restore your session</Typography>
+        <Typography variant="body" className="max-w-md text-center text-muted-foreground">
+          {restoreError ?? 'Check your connection and try again.'}
+        </Typography>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={() => void restoreSession()}>Try again</Button>
+          <Button variant="outlined" onClick={logout}>
+            Sign in again
+          </Button>
+        </div>
       </div>
     )
   }

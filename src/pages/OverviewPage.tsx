@@ -352,8 +352,9 @@ export function OverviewPage() {
     )
   }
 
-  if (!data) return null
-
+  if (!data) {
+    return <OverviewPageSkeleton />
+  }
   const firstName = user?.name?.split(' ')[0] ?? 'Pilot'
   const upcomingCheckIns = data.upcomingCheckIns ?? []
   const propertyPerformance = data.propertyPerformance ?? []

@@ -30,10 +30,12 @@ interface AuthContextValue {
   token: string | null
   featureFlags: FeatureFlags
   sessionReady: boolean
+  restoreError: string | null
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
+  restoreSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -49,12 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(DEFAULT_FEATURE_FLAGS)
   const [sessionReady, setSessionReady] = useState(() => !readStoredToken())
+  const [restoreError, setRestoreError] = useState<string | null>(null)
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
     setToken(null)
     setUser(null)
     setFeatureFlags(DEFAULT_FEATURE_FLAGS)
+    setRestoreError(null)
     setSessionReady(true)
   }, [])
 
@@ -72,45 +76,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(activeToken)
     setUser(data.user)
     setFeatureFlags(data.featureFlags)
+    setRestoreError(null)
+  }, [])
+
+  const restoreSession = useCallback(async () => {
+    const storedToken = readStoredToken()
+    if (!storedToken) {
+      setToken(null)
+      setUser(null)
+      setRestoreError(null)
+      setSessionReady(true)
+      return
+    }
+
+    setSessionReady(false)
+    setRestoreError(null)
+    try {
+      const data = await apiRequest<{ user: User; featureFlags: FeatureFlags }>('/auth/me', {
+        token: storedToken,
+        logoutOn401: false,
+      })
+      setToken(storedToken)
+      setUser(data.user)
+      setFeatureFlags(data.featureFlags)
+      setRestoreError(null)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        localStorage.removeItem(TOKEN_KEY)
+        setToken(null)
+        setUser(null)
+        setFeatureFlags(DEFAULT_FEATURE_FLAGS)
+        setRestoreError(null)
+      } else {
+        // Keep the token; AuthBootstrap will show retry instead of an empty shell.
+        setToken(storedToken)
+        setUser(null)
+        setRestoreError(
+          error instanceof Error
+            ? error.message
+            : 'Could not restore your session. Check your connection and try again.',
+        )
+      }
+    } finally {
+      setSessionReady(true)
+    }
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-
-    async function restoreSession() {
-      const storedToken = readStoredToken()
-      if (!storedToken) {
-        setSessionReady(true)
-        return
-      }
-
-      try {
-        const data = await apiRequest<{ user: User; featureFlags: FeatureFlags }>('/auth/me', {
-          token: storedToken,
-          logoutOn401: false,
-        })
-        if (cancelled) return
-        setToken(storedToken)
-        setUser(data.user)
-        setFeatureFlags(data.featureFlags)
-      } catch (error) {
-        if (cancelled) return
-        // Only clear the session when the token is actually invalid
-        if (error instanceof ApiError && error.status === 401) {
-          localStorage.removeItem(TOKEN_KEY)
-          setToken(null)
-          setUser(null)
-        }
-      } finally {
-        if (!cancelled) setSessionReady(true)
-      }
-    }
-
     void restoreSession()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  }, [restoreSession])
 
   useEffect(() => {
     setOnUnauthorized(() => {
@@ -131,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token)
     setUser(data.user)
     setFeatureFlags(data.featureFlags)
+    setRestoreError(null)
     setSessionReady(true)
   }, [])
 
@@ -147,14 +162,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(data.token)
       setUser(data.user)
       setFeatureFlags(data.featureFlags)
+      setRestoreError(null)
       setSessionReady(true)
     },
     [],
   )
 
   const value = useMemo(
-    () => ({ user, token, featureFlags, sessionReady, login, register, logout, refreshUser }),
-    [user, token, featureFlags, sessionReady, login, register, logout, refreshUser],
+    () => ({
+      user,
+      token,
+      featureFlags,
+      sessionReady,
+      restoreError,
+      login,
+      register,
+      logout,
+      refreshUser,
+      restoreSession,
+    }),
+    [
+      user,
+      token,
+      featureFlags,
+      sessionReady,
+      restoreError,
+      login,
+      register,
+      logout,
+      refreshUser,
+      restoreSession,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
