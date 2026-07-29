@@ -93,8 +93,10 @@ export function bookingToCalendarEvent(checkIn: string, checkOut: string) {
 
   return {
     start,
-    // checkOut is the guest's checkout day; extend one day for exclusive all-day rendering.
-    end: addDays(checkout, 1),
+    // checkOut is the departure day (exclusive of occupied nights). RBC all-day
+    // `end` is also exclusive, so pass checkout directly — do not add a day or the
+    // checkout date looks booked and WhatsApp/app correctly allow a same-day check-in.
+    end: checkout,
     allDay: true as const,
   }
 }
