@@ -1,6 +1,4 @@
-import { Bell, HelpCircle } from 'lucide-react'
-import { Button, SearchInput, Typography } from '..'
-import { LogoutButton } from './LogoutButton'
+import { SearchInput, Typography } from '..'
 import { ProfileSettingsButton } from './ProfileSettingsButton'
 
 interface DashboardTopBarProps {
@@ -32,23 +30,6 @@ export function DashboardTopBar({
       )}
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Notifications"
-          className="relative"
-        >
-          <Bell className="size-5" />
-          <span
-            className="absolute right-1.5 top-1.5 size-2 rounded-full bg-destructive"
-            aria-hidden
-          />
-        </Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Help">
-          <HelpCircle className="size-5" />
-        </Button>
-        <div className="mx-1 h-8 w-px bg-border" aria-hidden />
-        <LogoutButton />
         <ProfileSettingsButton className="pl-1" />
       </div>
     </header>

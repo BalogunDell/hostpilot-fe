@@ -58,6 +58,7 @@ interface OverviewData {
     guestName: string
     propertyName: string
     checkIn: string
+    checkOut?: string
   }>
   propertyPerformance: Array<{
     propertyId: string
