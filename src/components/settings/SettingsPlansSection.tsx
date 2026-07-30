@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { Check } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import {
+  BILLING_INTERVAL_LABELS,
   comparePlans,
   normalizeUserPlan,
   PLAN_CATALOG,
+  type BillingInterval,
   type PaidPlan,
   type UserPlan,
 } from '@staypilot/shared'
@@ -24,6 +27,10 @@ interface PlanCardProps {
   features: readonly string[]
   isCurrent: boolean
   badge?: string
+  billingSummary?: {
+    periodLabel: string
+    expiresLabel: string
+  } | null
   action?: {
     label: string
     variant?: 'primary' | 'secondary'
@@ -39,6 +46,7 @@ function PlanCard({
   features,
   isCurrent,
   badge,
+  billingSummary,
   action,
 }: PlanCardProps) {
   return (
@@ -78,6 +86,19 @@ function PlanCard({
         ) : null}
       </div>
 
+      {isCurrent && billingSummary ? (
+        <div className="rounded-lg bg-secondary/5 px-3 py-2 text-xs text-foreground">
+          <div>
+            <span className="text-muted-foreground">Paid period: </span>
+            <span className="font-medium">{billingSummary.periodLabel}</span>
+          </div>
+          <div className="mt-0.5">
+            <span className="text-muted-foreground">Expires: </span>
+            <span className="font-medium">{billingSummary.expiresLabel}</span>
+          </div>
+        </div>
+      ) : null}
+
       <ul className="grid flex-1 grid-cols-1 gap-1.5">
         {features.map((feature) => (
           <li key={feature} className="flex items-start gap-1.5 text-xs text-foreground">
@@ -103,6 +124,27 @@ function PlanCard({
   )
 }
 
+function formatBillingSummary(
+  billingInterval: BillingInterval | null | undefined,
+  subscriptionEndsAt: string | null | undefined,
+) {
+  if (!subscriptionEndsAt) return null
+
+  let expiresLabel = '—'
+  try {
+    expiresLabel = format(parseISO(subscriptionEndsAt), 'MMM d, yyyy')
+  } catch {
+    return null
+  }
+
+  return {
+    periodLabel: billingInterval
+      ? BILLING_INTERVAL_LABELS[billingInterval]
+      : 'Prepaid access',
+    expiresLabel,
+  }
+}
+
 export function SettingsPlansSection() {
   const api = useApi()
   const { user, refreshUser } = useAuth()
@@ -111,6 +153,10 @@ export function SettingsPlansSection() {
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null)
 
   const currentPlan = normalizeUserPlan(user?.plan ?? 'STARTER')
+  const currentBillingSummary = formatBillingSummary(
+    user?.billingInterval,
+    user?.subscriptionEndsAt,
+  )
 
   const downgradeMutation = useMutation({
     mutationFn: () =>
@@ -217,6 +263,7 @@ export function SettingsPlansSection() {
             features={plan.features}
             isCurrent={currentPlan === plan.id}
             badge={plan.recommended && currentPlan !== plan.id ? 'Recommended' : undefined}
+            billingSummary={currentPlan === plan.id ? currentBillingSummary : null}
             action={getPlanAction(plan.id)}
           />
         ))}

@@ -10,6 +10,7 @@ import {
 import { ApiError, apiRequest, setOnUnauthorized } from '../api/client'
 import {
   DEFAULT_FEATURE_FLAGS,
+  type BillingInterval,
   type FeatureFlags,
   type UserPlan,
 } from '@staypilot/shared'
@@ -23,6 +24,8 @@ export interface User {
   role: 'ADMIN' | 'COHOST'
   emailVerified: boolean
   createdAt: string
+  billingInterval?: BillingInterval | null
+  subscriptionEndsAt?: string | null
 }
 
 interface AuthContextValue {
