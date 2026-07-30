@@ -9,6 +9,14 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--include=dev"
 
+# Production (main) keeps VITE_API_URL from the Netlify UI (production Railway).
+# Non-main branch deploys and PR previews point at staging.
+[context.branch-deploy.environment]
+  VITE_API_URL = "https://staypilotserver-staging.up.railway.app/api/v1"
+
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://staypilotserver-staging.up.railway.app/api/v1"
+
 # SPA fallback — React Router client routes
 [[redirects]]
   from = "/*"

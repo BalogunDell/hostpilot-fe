@@ -163,7 +163,7 @@ export async function fetchPropertyReportPdf(propertyId: string, token: string |
   const disposition = response.headers.get('Content-Disposition')
   const filename =
     disposition?.match(/filename="([^"]+)"/)?.[1] ??
-    `staypilot-property-report-${propertyId.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.pdf`
+    `hostsledger-property-report-${propertyId.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.pdf`
 
   return { blob, filename }
 }

@@ -8,11 +8,12 @@ import {
   comparePlans,
   normalizeUserPlan,
   PLAN_CATALOG,
+  PLAN_LABELS,
   type BillingInterval,
   type PaidPlan,
   type UserPlan,
 } from '@staypilot/shared'
-import { Button, Card, Typography } from '../index'
+import { Button, Card, Dialog, Typography } from '../index'
 import { ApiError, formatNaira } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -151,6 +152,7 @@ export function SettingsPlansSection() {
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null)
+  const [downgradeOpen, setDowngradeOpen] = useState(false)
 
   const currentPlan = normalizeUserPlan(user?.plan ?? 'STARTER')
   const currentBillingSummary = formatBillingSummary(
@@ -165,6 +167,7 @@ export function SettingsPlansSection() {
         body: JSON.stringify({ plan: 'STARTER' }),
       }),
     onSuccess: async () => {
+      setDowngradeOpen(false)
       await refreshUser()
       showToast('Plan updated to Starter')
     },
@@ -237,7 +240,7 @@ export function SettingsPlansSection() {
         label: 'Downgrade',
         variant: 'secondary' as const,
         loading: downgradeMutation.isPending,
-        onClick: () => downgradeMutation.mutate(),
+        onClick: () => setDowngradeOpen(true),
       }
     }
 
@@ -268,6 +271,56 @@ export function SettingsPlansSection() {
           />
         ))}
       </div>
+
+      <Dialog
+        open={downgradeOpen}
+        onClose={() => {
+          if (downgradeMutation.isPending) return
+          setDowngradeOpen(false)
+        }}
+        title="Downgrade to Starter?"
+        description={`You’re currently on ${PLAN_LABELS[currentPlan]}. Downgrading ends your paid plan immediately.`}
+      >
+        <ul className="flex flex-col gap-2 text-sm text-foreground">
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />
+            <span>You’ll lose paid features like unlimited WhatsApp logging, calendar sync, and reports.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />
+            <span>
+              {currentBillingSummary
+                ? `Any remaining time on your ${currentBillingSummary.periodLabel.toLowerCase()} period (expires ${currentBillingSummary.expiresLabel}) will not be refunded.`
+                : 'Any remaining prepaid time will not be refunded.'}
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />
+            <span>Your account becomes read-only until you upgrade again — you can view data but not make changes.</span>
+          </li>
+        </ul>
+
+        <div className="flex gap-3 border-t border-border pt-4">
+          <Button
+            variant="outlined"
+            className="flex-1"
+            allowWhenReadOnly
+            disabled={downgradeMutation.isPending}
+            onClick={() => setDowngradeOpen(false)}
+          >
+            Keep my plan
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex-1"
+            allowWhenReadOnly
+            loading={downgradeMutation.isPending}
+            onClick={() => downgradeMutation.mutate()}
+          >
+            Yes, downgrade
+          </Button>
+        </div>
+      </Dialog>
 
       {selectedPlan ? (
         <UpgradePaymentModal

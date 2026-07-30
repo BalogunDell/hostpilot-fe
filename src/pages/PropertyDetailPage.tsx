@@ -23,6 +23,7 @@ import {
   PropertyDetailPageSkeleton,
   Select,
   StatusDot,
+  Tooltip,
   Typography,
 } from '../components'
 import { PropertyReportViewer } from '../components/PropertyReportViewer'
@@ -103,6 +104,15 @@ function PropertyMetricCard({
 
 const expenseFieldClassName = 'border-border/70 bg-muted/50 shadow-none'
 
+const PROPERTY_STATUS_TOOLTIPS = {
+  maintenance:
+    'No revenue or booked nights this month. The property is treated as offline for maintenance or currently unbooked.',
+  occupied:
+    'Occupancy is 50% or higher this month — guests are regularly staying at this property.',
+  active:
+    'The property has activity this month, but occupancy is below 50%.',
+} as const
+
 function PropertyStatusBadge({
   occupancy,
   revenue,
@@ -114,27 +124,33 @@ function PropertyStatusBadge({
 
   if (status === 'maintenance') {
     return (
-      <Badge variant="outline" className="gap-1.5 border-border bg-card">
-        <StatusDot variant="destructive" />
-        Maintenance
-      </Badge>
+      <Tooltip content={PROPERTY_STATUS_TOOLTIPS.maintenance} placement="bottom">
+        <Badge variant="outline" className="gap-1.5 border-border bg-card">
+          <StatusDot variant="destructive" />
+          Maintenance
+        </Badge>
+      </Tooltip>
     )
   }
 
   if (status === 'occupied') {
     return (
-      <Badge variant="info" className="gap-1.5">
-        <StatusDot variant="success" />
-        Occupied
-      </Badge>
+      <Tooltip content={PROPERTY_STATUS_TOOLTIPS.occupied} placement="bottom">
+        <Badge variant="info" className="gap-1.5">
+          <StatusDot variant="success" />
+          Occupied
+        </Badge>
+      </Tooltip>
     )
   }
 
   return (
-    <Badge variant="success" className="gap-1.5">
-      <StatusDot variant="success" />
-      Active
-    </Badge>
+    <Tooltip content={PROPERTY_STATUS_TOOLTIPS.active} placement="bottom">
+      <Badge variant="success" className="gap-1.5">
+        <StatusDot variant="success" />
+        Active
+      </Badge>
+    </Tooltip>
   )
 }
 

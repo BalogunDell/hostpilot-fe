@@ -182,7 +182,6 @@ export function DashboardLayout() {
             </Typography>
           </div>
           <div className="flex items-center gap-1">
-            <LogoutButton />
             <ProfileSettingsButton showName={false} />
           </div>
         </header>

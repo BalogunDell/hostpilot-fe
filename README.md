@@ -16,16 +16,17 @@ npm run dev
 
 ## Env
 
-| Variable | Local | Netlify |
-|----------|--------|---------|
-| `VITE_API_URL` | `/api/v1` | `https://<your-railway-app>.up.railway.app/api/v1` |
+| Variable | Local | Netlify main | Netlify branch / preview |
+|----------|--------|--------------|---------------------------|
+| `VITE_API_URL` | `/api/v1` | production Railway (UI env) | staging Railway (`netlify.toml`) |
 
-Set `VITE_API_URL` in Netlify **before** the first production build (it is baked in at build time).
+`VITE_API_URL` is baked in at build time. Production uses the Netlify UI value; branch deploys and deploy previews use `https://staypilotserver-staging.up.railway.app/api/v1`.
 
 ## Netlify
 
 1. Connect this GitHub repo
 2. Build command: `npm run build` (from `netlify.toml`)
 3. Publish directory: `dist`
-4. Set `VITE_API_URL` to your Railway API `/api/v1` URL
-5. On Railway, set `CORS_ORIGINS` (and `CLIENT_URL`) to your Netlify URL
+4. Set production `VITE_API_URL` to your production Railway `/api/v1` URL
+5. On staging Railway, include `https://*.netlify.app` in `CORS_ORIGINS` so branch/preview sites can call the API
+6. On production Railway, set `CORS_ORIGINS` / `CLIENT_URL` to your live app domains
