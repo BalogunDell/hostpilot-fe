@@ -71,9 +71,13 @@ export function UpgradePaymentModal({
   const titleId = useId()
   const planDefinition = getPlanDefinition(targetPlan)
   const [interval, setInterval] = useState<BillingInterval>('monthly')
+  const [manualPaymentMessage, setManualPaymentMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setManualPaymentMessage(null)
+      return
+    }
     setInterval('monthly')
   }, [open, targetPlan])
 
@@ -148,7 +152,7 @@ export function UpgradePaymentModal({
     },
     onError: (error) => {
       if (error instanceof ApiError && error.code === 'PAYSTACK_MANUAL_PAYMENT') {
-        showToast(error.message, 'success', 20000)
+        setManualPaymentMessage(error.message)
         return
       }
       const message =
@@ -165,6 +169,48 @@ export function UpgradePaymentModal({
 
   if (!open) {
     return null
+  }
+
+  if (manualPaymentMessage) {
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4"
+        onClick={onClose}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <header className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
+            <Typography id={titleId} variant="h3" className="text-primary-900">
+              Pay by bank transfer
+            </Typography>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              allowWhenReadOnly
+              onClick={onClose}
+              aria-label="Close payment instructions"
+            >
+              <X className="size-4" />
+            </Button>
+          </header>
+
+          <div className="flex flex-col gap-5 p-6">
+            <Typography variant="body" className="whitespace-pre-line text-foreground">
+              {manualPaymentMessage}
+            </Typography>
+            <Button variant="inverted" size="lg" className="w-full" allowWhenReadOnly onClick={onClose}>
+              Got it
+            </Button>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    )
   }
 
   return createPortal(
