@@ -20,7 +20,7 @@ interface ToastItem {
 }
 
 interface ToastContextValue {
-  showToast: (message: string, variant?: ToastVariant) => void
+  showToast: (message: string, variant?: ToastVariant, durationMs?: number) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -35,10 +35,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const showToast = useCallback(
-    (message: string, variant: ToastVariant = 'success') => {
+    (message: string, variant: ToastVariant = 'success', durationMs = TOAST_DURATION_MS) => {
       const id = crypto.randomUUID()
       setToasts((current) => [...current, { id, message, variant }])
-      window.setTimeout(() => dismissToast(id), TOAST_DURATION_MS)
+      window.setTimeout(() => dismissToast(id), durationMs)
     },
     [dismissToast],
   )
@@ -57,7 +57,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={toast.id}
               className={cn(
-                'pointer-events-auto flex w-full min-h-16 max-w-lg items-center gap-4 rounded-xl border px-5 py-4 shadow-xl sm:min-w-[22rem]',
+                'pointer-events-auto flex w-full min-h-16 max-w-lg items-start gap-4 rounded-xl border px-5 py-4 shadow-xl sm:min-w-[22rem]',
                 toast.variant === 'success'
                   ? 'border-tertiary bg-tertiary-50'
                   : 'border-destructive bg-destructive-50',
@@ -70,7 +70,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   toast.variant === 'success' ? 'text-tertiary' : 'text-destructive',
                 )}
               />
-              <Typography variant="body" className="flex-1 font-medium">
+              <Typography variant="body" className="flex-1 whitespace-pre-line font-medium">
                 {toast.message}
               </Typography>
               <button
