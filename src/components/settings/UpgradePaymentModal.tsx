@@ -147,6 +147,10 @@ export function UpgradePaymentModal({
       }
     },
     onError: (error) => {
+      if (error instanceof ApiError && error.code === 'PAYSTACK_MANUAL_PAYMENT') {
+        showToast(error.message, 'success', 20000)
+        return
+      }
       const message =
         error instanceof ApiError
           ? error.message
