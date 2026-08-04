@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
-import { Check, X } from 'lucide-react'
+import { Check, Copy, X } from 'lucide-react'
 import {
   BILLING_INTERVALS,
   BILLING_INTERVAL_LABELS,
@@ -44,6 +44,24 @@ interface UpgradePaymentModalProps {
   onSuccess: () => void
 }
 
+interface ManualPaymentDetails {
+  accountName: string
+  accountNumber: string
+  bank: string
+  receiptEmail: string
+}
+
+function isManualPaymentDetails(value: unknown): value is ManualPaymentDetails {
+  if (!value || typeof value !== 'object') return false
+  const details = value as Record<string, unknown>
+  return (
+    typeof details.accountName === 'string' &&
+    typeof details.accountNumber === 'string' &&
+    typeof details.bank === 'string' &&
+    typeof details.receiptEmail === 'string'
+  )
+}
+
 function PaystackBadge() {
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -71,11 +89,13 @@ export function UpgradePaymentModal({
   const titleId = useId()
   const planDefinition = getPlanDefinition(targetPlan)
   const [interval, setInterval] = useState<BillingInterval>('monthly')
-  const [manualPaymentMessage, setManualPaymentMessage] = useState<string | null>(null)
+  const [manualPayment, setManualPayment] = useState<ManualPaymentDetails | null>(null)
+  const [manualPaymentFallback, setManualPaymentFallback] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) {
-      setManualPaymentMessage(null)
+      setManualPayment(null)
+      setManualPaymentFallback(null)
       return
     }
     setInterval('monthly')
@@ -152,7 +172,11 @@ export function UpgradePaymentModal({
     },
     onError: (error) => {
       if (error instanceof ApiError && error.code === 'PAYSTACK_MANUAL_PAYMENT') {
-        setManualPaymentMessage(error.message)
+        if (isManualPaymentDetails(error.details)) {
+          setManualPayment(error.details)
+        } else {
+          setManualPaymentFallback(error.message)
+        }
         return
       }
       const message =
@@ -165,13 +189,22 @@ export function UpgradePaymentModal({
     },
   })
 
+  async function copyAccountNumber(accountNumber: string) {
+    try {
+      await navigator.clipboard.writeText(accountNumber)
+      showToast('Account number copied')
+    } catch {
+      showToast('Could not copy account number', 'error')
+    }
+  }
+
   const isBusy = payMutation.isPending || verifyMutation.isPending
 
   if (!open) {
     return null
   }
 
-  if (manualPaymentMessage) {
+  if (manualPayment || manualPaymentFallback) {
     return createPortal(
       <div
         className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4"
@@ -200,9 +233,59 @@ export function UpgradePaymentModal({
           </header>
 
           <div className="flex flex-col gap-5 p-6">
-            <Typography variant="body" className="whitespace-pre-line text-foreground">
-              {manualPaymentMessage}
-            </Typography>
+            {manualPayment ? (
+              <div className="flex flex-col gap-3 text-sm text-foreground">
+                <Typography variant="body">
+                  We are currently working on finalizing payment with Paystack. Please check back
+                  later, or make payment to:
+                </Typography>
+
+                <dl className="flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-4">
+                  <div className="flex flex-col gap-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Account name</dt>
+                    <dd className="font-medium">{manualPayment.accountName}</dd>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Account number</dt>
+                    <dd className="flex items-center gap-2">
+                      <code className="rounded-md border border-border bg-background px-2.5 py-1.5 font-mono text-sm tracking-wide">
+                        {manualPayment.accountNumber}
+                      </code>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        allowWhenReadOnly
+                        aria-label="Copy account number"
+                        onClick={() => copyAccountNumber(manualPayment.accountNumber)}
+                      >
+                        <Copy className="size-4" />
+                      </Button>
+                    </dd>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Bank</dt>
+                    <dd className="font-medium">{manualPayment.bank}</dd>
+                  </div>
+                </dl>
+
+                <Typography variant="body">
+                  Send the receipt to{' '}
+                  <a
+                    href={`mailto:${manualPayment.receiptEmail}`}
+                    className="font-medium text-secondary underline underline-offset-2 hover:text-secondary/80"
+                  >
+                    {manualPayment.receiptEmail}
+                  </a>{' '}
+                  and we will verify your payment and upgrade your account within 24 hours.
+                </Typography>
+              </div>
+            ) : (
+              <Typography variant="body" className="whitespace-pre-line text-foreground">
+                {manualPaymentFallback}
+              </Typography>
+            )}
+
             <Button variant="inverted" size="lg" className="w-full" allowWhenReadOnly onClick={onClose}>
               Got it
             </Button>
