@@ -129,7 +129,7 @@ export function RegisterPage() {
           <AuthBrand />
           <Typography variant="h2" className="mb-2">Create account</Typography>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input label="Admin name" value={name} onChange={(e) => setName(e.target.value)} />
             <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <PasswordInput label="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
             <PasswordInput
