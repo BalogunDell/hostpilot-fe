@@ -19,12 +19,14 @@ export function setOnUnauthorized(handler: (() => void) | null) {
 export class ApiError extends Error {
   status: number
   code?: string
+  details?: unknown
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, details?: unknown) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
@@ -43,11 +45,12 @@ async function parseApiResponse<T>(response: Response, logoutOn401 = true): Prom
   }
 
   if (!response.ok) {
-    const error = body as { error?: { message?: string; code?: string } }
+    const error = body as { error?: { message?: string; code?: string; details?: unknown } }
     throw new ApiError(
       error.error?.message ?? 'Request failed',
       response.status,
       error.error?.code,
+      error.error?.details,
     )
   }
 
