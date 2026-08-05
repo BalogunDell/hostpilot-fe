@@ -25,7 +25,12 @@ function hostname(): string {
 /** True on the public marketing domain (not the app subdomain). */
 export function isMarketingHost(): boolean {
   const host = hostname()
-  return host === 'hostsledger.com' || host === 'www.hostsledger.com'
+  if (host === 'hostsledger.com' || host === 'www.hostsledger.com') return true
+  // Local preview: open http://localhost:5173/?marketing=1
+  if (isDev && typeof window !== 'undefined') {
+    return new URLSearchParams(window.location.search).has('marketing')
+  }
+  return false
 }
 
 /** True on the product app domain (or local/dev). */
