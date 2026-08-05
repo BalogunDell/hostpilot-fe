@@ -39,6 +39,7 @@ import {
   validateBookingDates,
 } from '../lib/bookingDates'
 import { CreateReviewLinkDialog } from '../components/CreateReviewLinkDialog'
+import { ExportRecordsDialog } from '../components/ExportRecordsDialog'
 
 interface Booking {
   id: string
@@ -175,45 +176,6 @@ function ReviewLinkCell({
   )
 }
 
-function escapeCsvValue(value: string) {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
-}
-
-function downloadBookingsCsv(
-  bookings: Booking[],
-  propertyMap: Map<string, Property>,
-) {
-  const headers = ['Guest', 'Property', 'Check-in', 'Check-out', 'Nights', 'Amount', 'Source']
-  const rows = bookings.map((booking) => {
-    const property = propertyMap.get(booking.propertyId)
-    const nights = stayNights(booking.checkIn, booking.checkOut)
-    return [
-      booking.guestName,
-      property?.name ?? '',
-      booking.checkIn,
-      booking.checkOut,
-      String(nights),
-      String(booking.amount),
-      booking.source,
-    ]
-  })
-
-  const csv = [headers, ...rows]
-    .map((row) => row.map(escapeCsvValue).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `bookings-${new Date().toISOString().slice(0, 10)}.csv`
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
 export function BookingsPage() {
   const api = useApi()
   const { token } = useAuth()
@@ -222,8 +184,6 @@ export function BookingsPage() {
   const queryClient = useQueryClient()
   const {
     selectedMonth,
-    setSelectedMonth,
-    monthOptions,
     from: monthFrom,
     to: monthTo,
     start: monthStart,
@@ -235,6 +195,7 @@ export function BookingsPage() {
   const [propertyFilter, setPropertyFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
   const [guestName, setGuestName] = useState('')
   const [propertyId, setPropertyId] = useState('')
@@ -323,6 +284,10 @@ export function BookingsPage() {
   }
 
   useEffect(() => {
+    setPage(1)
+  }, [selectedMonth])
+
+  useEffect(() => {
     if (properties.length === 0) return
 
     const hasValidFilter = properties.some((property) => property.id === propertyFilter)
@@ -399,8 +364,12 @@ export function BookingsPage() {
       setDateError('')
       return
     }
+    if (checkIn && (checkIn < monthFrom || checkIn > monthTo)) {
+      setDateError(`Check-in must fall within ${selectedMonthLabel}.`)
+      return
+    }
     setDateError(validateBookingDates(checkIn, checkOut, bookingsForValidation) ?? '')
-  }, [checkIn, checkOut, bookingsForValidation])
+  }, [checkIn, checkOut, bookingsForValidation, monthFrom, monthTo, selectedMonthLabel])
 
   function resetForm() {
     setEditingBookingId(null)
@@ -542,22 +511,10 @@ export function BookingsPage() {
             Monitor and manage reservations for {selectedMonthLabel}.
           </Typography>
         </div>
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-          <Select
-            aria-label="Select month"
-            className="w-full bg-card sm:w-[11.5rem]"
-            value={selectedMonth}
-            options={monthOptions}
-            onChange={(event) => {
-              setSelectedMonth(event.target.value)
-              setPage(1)
-            }}
-          />
-          <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
-            <Plus className="size-4" />
-            Add Booking
-          </Button>
-        </div>
+        <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
+          <Plus className="size-4" />
+          Add Booking
+        </Button>
       </div>
 
       <WhatsAppBookingBanner />
@@ -616,11 +573,10 @@ export function BookingsPage() {
           <Button
             variant="outlined"
             className="w-full lg:w-auto"
-            disabled={!hasExportRecords || bookings.length === 0}
+            disabled={!hasExportRecords}
             onClick={() => {
               if (!hasExportRecords) return
-              downloadBookingsCsv(bookings, propertyMap)
-              showToast('Bookings exported')
+              setExportOpen(true)
             }}
           >
             <Download className="size-4" />
@@ -855,6 +811,7 @@ export function BookingsPage() {
         open={dialogOpen}
         onClose={closeDialog}
         title={editingBookingId ? 'Edit Booking' : 'Add Booking'}
+        description={`Dates must fall within ${selectedMonthLabel}.`}
       >
         <div className="flex flex-col gap-4">
           <Input label="Guest name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
@@ -882,6 +839,8 @@ export function BookingsPage() {
               type="date"
               value={checkIn}
               disabled={!propertyId}
+              min={monthFrom}
+              max={monthTo}
               onChange={(e) => {
                 const value = e.target.value
                 if (!value) {
@@ -966,6 +925,13 @@ export function BookingsPage() {
           }}
         />
       ) : null}
+
+      <ExportRecordsDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        properties={properties}
+        defaultPropertyId={propertyFilter}
+      />
     </div>
   )
 }

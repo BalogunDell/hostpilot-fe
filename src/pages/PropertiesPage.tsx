@@ -24,7 +24,6 @@ import {
   Input,
   PlanUpgradeBanner,
   PropertyCardsSkeleton,
-  Select,
   Typography,
 } from '../components'
 import { ApiError, formatNaira } from '../api/client'
@@ -120,12 +119,7 @@ export function PropertiesPage() {
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
   const [formError, setFormError] = useState('')
-  const {
-    selectedMonth,
-    setSelectedMonth,
-    monthOptions,
-    label: selectedMonthLabel,
-  } = useSelectedMonth()
+  const { selectedMonth, label: selectedMonthLabel } = useSelectedMonth()
 
   const { data, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['properties'],
@@ -270,14 +264,7 @@ export function PropertiesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Select
-          aria-label="Select month"
-          className="w-full bg-card sm:w-[11.5rem]"
-          value={selectedMonth}
-          options={monthOptions}
-          onChange={(event) => setSelectedMonth(event.target.value)}
-        />
+      <div className="flex items-center justify-end">
         {renderAddPropertyButton()}
       </div>
 

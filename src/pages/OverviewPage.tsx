@@ -25,7 +25,6 @@ import {
   Image,
   OverviewPageSkeleton,
   PlanUpgradeBanner,
-  Select,
   Typography,
 } from '../components'
 import { buttonVariants } from '../components/Button'
@@ -311,12 +310,7 @@ export function OverviewPage() {
   const queryClient = useQueryClient()
   const [connectCalendarOpen, setConnectCalendarOpen] = useState(false)
   const [connectPropertyId, setConnectPropertyId] = useState<string | undefined>()
-  const {
-    selectedMonth,
-    setSelectedMonth,
-    monthOptions,
-    label: selectedMonthLabel,
-  } = useSelectedMonth()
+  const { selectedMonth, label: selectedMonthLabel } = useSelectedMonth()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboard', 'overview', selectedMonth],
@@ -415,29 +409,9 @@ export function OverviewPage() {
             Good Morning, {firstName}
           </Typography>
           <Typography variant="caption" className="mt-1 block text-base text-muted-foreground">
-            Here is what&apos;s happening with your properties today.
+            Here is what&apos;s happening with your properties for {selectedMonthLabel}.
           </Typography>
         </div>
-        <Select
-          aria-label="Select month"
-          className="w-full bg-card"
-          value={selectedMonth}
-          options={monthOptions}
-          onChange={(event) => setSelectedMonth(event.target.value)}
-        />
-      </div>
-
-      <div className="hidden items-center justify-between gap-3 lg:flex">
-        <Typography variant="caption" className="text-muted-foreground">
-          Showing data for {selectedMonthLabel}
-        </Typography>
-        <Select
-          aria-label="Select month"
-          className="w-[11.5rem] bg-card"
-          value={selectedMonth}
-          options={monthOptions}
-          onChange={(event) => setSelectedMonth(event.target.value)}
-        />
       </div>
 
       {/* ── Mobile stats ── */}

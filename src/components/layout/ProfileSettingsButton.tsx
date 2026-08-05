@@ -1,28 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Menu, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Avatar } from '../Avatar'
 import { Typography } from '../Typography'
 import { useAuth } from '../../context/AuthContext'
 import { cn } from '../../lib/cn'
 
-function userInitials(name: string) {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-}
-
 interface ProfileSettingsButtonProps {
-  showName?: boolean
   className?: string
+  /** @deprecated Avatar/name trigger removed; kept for call-site compatibility. */
+  showName?: boolean
 }
 
-export function ProfileSettingsButton({
-  showName = true,
-  className,
-}: ProfileSettingsButtonProps) {
+export function ProfileSettingsButton({ className }: ProfileSettingsButtonProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -71,30 +60,13 @@ export function ProfileSettingsButton({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className={cn(
-          'rounded-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          showName ? 'flex items-center gap-3 px-1 py-1' : 'p-0',
-        )}
+        className="inline-flex size-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         aria-label="Account menu"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
       >
-        {showName ? (
-          <div className="text-right">
-            <Typography variant="label" className="block leading-tight">
-              {displayName}
-            </Typography>
-            <Typography variant="caption" className="leading-tight">
-              {role}
-            </Typography>
-          </div>
-        ) : null}
-        <Avatar
-          alt={displayName}
-          fallback={userInitials(displayName)}
-          size="sm"
-        />
+        <Menu className="size-5" aria-hidden />
       </button>
 
       {open ? (

@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   BookOpen,
   Building2,
   Calendar,
   LayoutDashboard,
-  Plane,
   X,
 } from 'lucide-react'
-import { Button, Typography } from '../../components'
+import { Button, Select, Typography } from '../../components'
 import { ApiStatusBanner } from '../ApiStatusBanner'
 import { ReadOnlyBanner } from '../ReadOnlyBanner'
 import { useApp } from '../../context/AppContext'
+import { useDashboardPeriod } from '../../context/DashboardPeriodContext'
 import { isBlockedReadOnlyAnchor } from '../../context/AppNavigation'
 import { cn } from '../../lib/cn'
 import { DashboardTopBar } from './DashboardTopBar'
@@ -35,31 +36,29 @@ const mobileTabItems = [
 
 function getPageMeta(pathname: string) {
   if (pathname === '/') {
-    return {
-      title: 'Overview',
-      searchPlaceholder: 'Search properties, guests, or payouts...',
-    }
+    return { title: 'Overview' }
   }
   if (pathname.startsWith('/properties/')) {
-    return { title: 'Property Details', searchPlaceholder: 'Search properties...' }
+    return { title: 'Property Details' }
   }
   if (pathname.startsWith('/properties')) {
-    return { title: 'Your Properties', searchPlaceholder: 'Search properties...' }
+    return { title: 'Your Properties' }
   }
   if (pathname.startsWith('/bookings')) {
-    return { title: 'Bookings', searchPlaceholder: 'Search bookings...' }
+    return { title: 'Bookings' }
   }
   if (pathname.startsWith('/calendar')) {
-    return { title: 'Calendar', searchPlaceholder: 'Search events...' }
+    return { title: 'Calendar' }
   }
   if (pathname.startsWith('/settings') || pathname.startsWith('/pricing')) {
-    return { title: 'Settings', showSearch: false }
+    return { title: 'Settings' }
   }
-  return { title: 'HostsLedger', searchPlaceholder: 'Search...' }
+  return { title: 'HostsLedger' }
 }
 
 export function DashboardLayout() {
   const { readOnly } = useApp()
+  const { selectedMonth, setSelectedMonth, monthOptions } = useDashboardPeriod()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -172,28 +171,38 @@ export function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col lg:min-h-svh">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-secondary text-primary-foreground">
-              <Plane className="size-4" aria-hidden />
+        <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3 lg:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-primary-900 text-tertiary">
+                <BarChart3 className="size-4" aria-hidden />
+              </span>
+              <Typography variant="h4" className="truncate text-foreground">
+                HostsLedger
+              </Typography>
             </div>
-            <Typography variant="h4" className="text-secondary">
-              HostsLedger
-            </Typography>
+            <ProfileSettingsButton />
           </div>
-          <div className="flex items-center gap-1">
-            <ProfileSettingsButton showName={false} />
+          <div className="mt-3 flex items-center gap-2">
+            <Typography variant="caption" className="shrink-0 text-muted-foreground">
+              Viewing:
+            </Typography>
+            <div className="min-w-0 flex-1">
+              <Select
+                aria-label="Select month"
+                className="h-9 border-0 bg-muted text-sm"
+                value={selectedMonth}
+                options={monthOptions}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+              />
+            </div>
           </div>
         </header>
 
         <ApiStatusBanner />
         {readOnly ? <ReadOnlyBanner /> : null}
 
-        <DashboardTopBar
-          title={pageMeta.title}
-          searchPlaceholder={pageMeta.searchPlaceholder}
-          showSearch={pageMeta.showSearch}
-        />
+        <DashboardTopBar title={pageMeta.title} />
 
         <main
           className="flex-1 overflow-x-hidden overflow-y-auto p-4 pb-24 lg:p-6 lg:pb-6"

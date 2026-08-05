@@ -5,6 +5,7 @@ import { PageLoaderSkeleton } from './components/Skeleton'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 import { AppProvider } from './context/AppContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { DashboardPeriodProvider } from './context/DashboardPeriodContext'
 import { ToastProvider } from './context/ToastContext'
 import {
   AuthBootstrap,
@@ -132,7 +133,11 @@ function AppHomeRoute() {
   if (!sessionReady) return <PageLoader />
   if (!token || !user) return <Navigate to="/login" replace />
   if (!user.emailVerified) return <VerifyEmailGate />
-  return <DashboardLayout />
+  return (
+    <DashboardPeriodProvider>
+      <DashboardLayout />
+    </DashboardPeriodProvider>
+  )
 }
 
 function MarketingRoutes() {
