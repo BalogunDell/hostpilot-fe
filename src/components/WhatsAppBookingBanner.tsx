@@ -29,7 +29,7 @@ export function WhatsAppBookingBanner() {
     enabled: Boolean(user) && hasWhatsApp,
   })
 
-  const isConnected = Boolean(status?.connected && status.phoneNumber)
+  const isConnected = Boolean(status?.phoneNumber)
 
   return (
     <Card

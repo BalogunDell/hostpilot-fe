@@ -44,13 +44,10 @@ export function WhatsAppSettingsSection() {
       }),
     onSuccess: (result) => {
       setFormError('')
-      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] })
+      queryClient.setQueryData(['whatsapp', 'status'], result)
+      void queryClient.invalidateQueries({ queryKey: ['whatsapp', 'status'] })
       setPhone('')
-      showToast(
-        result.connected
-          ? 'WhatsApp Business number connected'
-          : 'WhatsApp Business number saved',
-      )
+      showToast('WhatsApp Business number connected')
     },
     onError: (error) => {
       const message =
@@ -82,7 +79,7 @@ export function WhatsAppSettingsSection() {
         </Typography>
       </div>
 
-      {!status?.connected ? <WhatsAppBusinessInfoBanner /> : null}
+      {!status?.phoneNumber ? <WhatsAppBusinessInfoBanner /> : null}
 
       {plan === 'STARTER' ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">
@@ -101,7 +98,7 @@ export function WhatsAppSettingsSection() {
           <Typography variant="caption" className="text-muted-foreground">
             Loading WhatsApp status…
           </Typography>
-        ) : status?.connected && status.phoneNumber ? (
+        ) : status?.phoneNumber ? (
           <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
             <Typography variant="label">{status.phoneNumber}</Typography>
             <Typography variant="caption" className="mt-1 block text-muted-foreground">
