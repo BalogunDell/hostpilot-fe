@@ -159,59 +159,20 @@ export function OnboardingPage() {
   const navigate = useNavigate()
   const { hasWhatsApp } = usePlanFeatures()
   const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
-  const [pendingPhone, setPendingPhone] = useState('')
-  const [whatsappStep, setWhatsappStep] = useState<'phone' | 'code'>('phone')
   const [propertyName, setPropertyName] = useState('')
   const [location, setLocation] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  async function handleSendCode() {
-    if (!phone.trim()) {
-      setError('Enter your WhatsApp Business phone number')
-      return
-    }
-    setError('')
-    setLoading(true)
-    try {
-      const result = await api<{
-        phoneNumber: string
-        connected: boolean
-        verificationSent?: boolean
-      }>('/whatsapp/link/request', {
-        method: 'POST',
-        body: JSON.stringify({ phoneNumber: phone }),
-      })
-      if (result.connected) {
-        setPendingPhone(result.phoneNumber)
-        setWhatsappStep('phone')
-        return
-      }
-      setPendingPhone(result.phoneNumber)
-      setWhatsappStep('code')
-      setCode('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send verification code')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError('')
     setLoading(true)
     try {
-      if (hasWhatsApp && pendingPhone && whatsappStep === 'code') {
-        if (code.trim().length !== 6) {
-          setError('Enter the 6-digit code from WhatsApp')
-          setLoading(false)
-          return
-        }
-        await api('/whatsapp/link/confirm', {
+      if (hasWhatsApp && phone.trim()) {
+        await api('/whatsapp/link', {
           method: 'POST',
-          body: JSON.stringify({ phoneNumber: pendingPhone, code }),
+          body: JSON.stringify({ phoneNumber: phone.trim() }),
         })
       }
       await api('/properties', {
@@ -236,63 +197,24 @@ export function OnboardingPage() {
         </Typography>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <WhatsAppBusinessInfoBanner />
-          {whatsappStep === 'code' ? (
-            <>
-              <Typography variant="caption" className="text-muted-foreground">
-                Enter the 6-digit code sent to {pendingPhone} on WhatsApp.
-              </Typography>
-              <Input
-                label="Verification code"
-                placeholder="123456"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="secondary" loading={loading} onClick={handleSendCode}>
-                  Resend code
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setWhatsappStep('phone')
-                    setCode('')
-                    setPendingPhone('')
-                  }}
-                >
-                  Change number
-                </Button>
-              </div>
-            </>
+          <Input
+            label={`Optional: ${WHATSAPP_BUSINESS_PHONE_LABEL}`}
+            placeholder="+234..."
+            value={phone}
+            disabled={!hasWhatsApp}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          {hasWhatsApp ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Use the WhatsApp Business number you will message HostsLedger from.
+            </Typography>
           ) : (
-            <>
-              <Input
-                label={`Optional: ${WHATSAPP_BUSINESS_PHONE_LABEL}`}
-                placeholder="+234..."
-                value={phone}
-                disabled={!hasWhatsApp}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              {hasWhatsApp ? (
-                <Typography variant="caption" className="text-muted-foreground">
-                  We’ll send a verification code to WhatsApp before connecting.
-                </Typography>
-              ) : (
-                <Typography variant="caption" className="text-muted-foreground">
-                  <a href="/settings#pricing" className="font-medium text-secondary hover:underline">
-                    Upgrade to Growth
-                  </a>{' '}
-                  to enable WhatsApp booking entry.
-                </Typography>
-              )}
-              {hasWhatsApp && phone.trim() ? (
-                <Button type="button" variant="secondary" loading={loading} onClick={handleSendCode}>
-                  Send WhatsApp verification code
-                </Button>
-              ) : null}
-            </>
+            <Typography variant="caption" className="text-muted-foreground">
+              <a href="/settings#pricing" className="font-medium text-secondary hover:underline">
+                Upgrade to Growth
+              </a>{' '}
+              to enable WhatsApp booking entry.
+            </Typography>
           )}
           <Input label="Property name" value={propertyName} onChange={(e) => setPropertyName(e.target.value)} />
           <Input
