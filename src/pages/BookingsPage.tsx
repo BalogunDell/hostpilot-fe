@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   differenceInCalendarDays,
-  endOfMonth,
   format,
   isWithinInterval,
   parseISO,
-  startOfMonth,
 } from 'date-fns'
 import { Copy, Download, MoreVertical, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -29,6 +27,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { cn } from '../lib/cn'
 import { formatMoneyInputNumber, parseMoneyInput } from '../lib/moneyInput'
 import {
@@ -221,6 +220,16 @@ export function BookingsPage() {
   const { hasExportRecords, hasWhatsApp, hasUnlimitedReviewLinks, reviewLinkLimit } = usePlanFeatures()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const {
+    selectedMonth,
+    setSelectedMonth,
+    monthOptions,
+    from: monthFrom,
+    to: monthTo,
+    start: monthStart,
+    end: monthEnd,
+    label: selectedMonthLabel,
+  } = useSelectedMonth()
 
   const [page, setPage] = useState(1)
   const [propertyFilter, setPropertyFilter] = useState('')
@@ -326,40 +335,32 @@ export function BookingsPage() {
   const queryString = new URLSearchParams({
     page: String(page),
     limit: String(limit),
+    from: monthFrom,
+    to: monthTo,
     ...(propertyFilter ? { propertyId: propertyFilter } : {}),
   }).toString()
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['bookings', page, propertyFilter],
+    queryKey: ['bookings', page, propertyFilter, monthFrom, monthTo],
     queryFn: () => apiRequestPaginated<Booking>(`/bookings?${queryString}`, { token }),
     enabled: Boolean(token && (properties.length === 0 || propertyFilter)),
   })
 
-  const monthRange = useMemo(() => {
-    const now = new Date()
-    return {
-      from: format(startOfMonth(now), 'yyyy-MM-dd'),
-      to: format(endOfMonth(now), 'yyyy-MM-dd'),
-      start: startOfMonth(now),
-      end: endOfMonth(now),
-    }
-  }, [])
-
   const { data: monthBookingsData } = useQuery({
-    queryKey: ['bookings', 'month-revenue', propertyFilter, monthRange.from, monthRange.to],
+    queryKey: ['bookings', 'month-revenue', propertyFilter, monthFrom, monthTo],
     queryFn: () =>
       apiRequestPaginated<Booking>(
-        `/bookings?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        `/bookings?propertyId=${propertyFilter}&from=${monthFrom}&to=${monthTo}&limit=100`,
         { token },
       ),
     enabled: Boolean(token && propertyFilter),
   })
 
   const { data: monthExpensesData } = useQuery({
-    queryKey: ['expenses', 'month', propertyFilter, monthRange.from, monthRange.to],
+    queryKey: ['expenses', 'month', propertyFilter, monthFrom, monthTo],
     queryFn: () =>
       apiRequestPaginated<Expense>(
-        `/expenses?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        `/expenses?propertyId=${propertyFilter}&from=${monthFrom}&to=${monthTo}&limit=100`,
         { token },
       ),
     enabled: Boolean(token && propertyFilter),
@@ -457,8 +458,8 @@ export function BookingsPage() {
     const monthlyGross = monthBookings
       .filter((b) =>
         isWithinInterval(parseISO(b.checkIn), {
-          start: monthRange.start,
-          end: monthRange.end,
+          start: monthStart,
+          end: monthEnd,
         }),
       )
       .reduce((sum, b) => sum + b.amount, 0)
@@ -482,7 +483,7 @@ export function BookingsPage() {
       avgStay,
       total: data?.meta.total ?? 0,
     }
-  }, [data, monthBookingsData?.data, monthExpensesData?.data, monthRange])
+  }, [data, monthBookingsData?.data, monthExpensesData?.data, monthStart, monthEnd])
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -538,13 +539,25 @@ export function BookingsPage() {
         <div>
           <Typography variant="h2">Bookings Management</Typography>
           <Typography variant="caption" className="mt-1 block">
-            Monitor and manage all reservations across your property portfolio.
+            Monitor and manage reservations for {selectedMonthLabel}.
           </Typography>
         </div>
-        <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
-          <Plus className="size-4" />
-          Add Booking
-        </Button>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <Select
+            aria-label="Select month"
+            className="w-full bg-card sm:w-[11.5rem]"
+            value={selectedMonth}
+            options={monthOptions}
+            onChange={(event) => {
+              setSelectedMonth(event.target.value)
+              setPage(1)
+            }}
+          />
+          <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
+            <Plus className="size-4" />
+            Add Booking
+          </Button>
+        </div>
       </div>
 
       <WhatsAppBookingBanner />
@@ -559,12 +572,12 @@ export function BookingsPage() {
           subtext={`${stats.total} total on record`}
         />
         <StatCard
-          label="Monthly revenue"
+          label={`Revenue · ${selectedMonthLabel}`}
           value={formatNaira(stats.monthlyRevenue)}
           subtext={
             stats.monthlyExpenses > 0
               ? `${formatNaira(stats.monthlyExpenses)} expenses deducted`
-              : 'No expenses deducted this month'
+              : `No expenses deducted for ${selectedMonthLabel}`
           }
         />
         <StatCard
