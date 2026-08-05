@@ -77,6 +77,7 @@ const PLANS = [
       '1 property',
       '5 bookings per month',
       '5 expenses per month',
+      'Add or update records up to 1 month back',
       '5 guest review requests per month',
       '1 WhatsApp booking or expense log per month',
       'Manual booking & expense tracking',
@@ -95,6 +96,7 @@ const PLANS = [
     features: [
       'Up to 3 properties',
       'Unlimited bookings & expenses',
+      'Add or update records up to 3 months back',
       'Unlimited WhatsApp booking & expense logging',
       'Automatic guest review requests',
       'Monthly income & expense reports',
@@ -112,6 +114,7 @@ const PLANS = [
     features: [
       'Up to 7 properties',
       'Unlimited bookings & expenses',
+      'Add or update records up to a year back',
       'Co-host / team access',
       'Role-based access',
       'Portfolio dashboard',

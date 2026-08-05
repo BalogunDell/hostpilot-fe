@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { endOfMonth, format, parseISO, startOfMonth, subMonths } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import {
   Copy,
   MapPin,
@@ -36,6 +36,7 @@ import { useAuth } from '../context/AuthContext'
 import { useActionsDisabled } from '../context/AppContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { cn } from '../lib/cn'
 import {
   CALENDAR_SYNC_PLATFORM_LABELS,
@@ -173,27 +174,12 @@ export function PropertyDetailPage() {
   const [icalUrl, setIcalUrl] = useState('')
   const [calendarPlatform, setCalendarPlatform] = useState<CalendarSyncPlatform>('AIRBNB')
   const [headline, setHeadline] = useState('')
-  const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'))
-
-  const monthOptions = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, index) => {
-        const date = startOfMonth(subMonths(new Date(), index))
-        return {
-          value: format(date, 'yyyy-MM'),
-          label: format(date, 'MMMM yyyy'),
-        }
-      }),
-    [],
-  )
-
-  const selectedMonthDate = useMemo(
-    () => parseISO(`${selectedMonth}-01`),
-    [selectedMonth],
-  )
-  const monthStart = format(startOfMonth(selectedMonthDate), 'yyyy-MM-dd')
-  const monthEnd = format(endOfMonth(selectedMonthDate), 'yyyy-MM-dd')
-  const selectedMonthLabel = format(selectedMonthDate, 'MMMM yyyy')
+  const {
+    selectedMonth,
+    from: monthStart,
+    to: monthEnd,
+    label: selectedMonthLabel,
+  } = useSelectedMonth()
 
   const { data: propertyData, isLoading: propertyLoading } = useQuery({
     queryKey: ['property', id],
@@ -394,13 +380,6 @@ export function PropertyDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Select
-            aria-label="Select month"
-            className="w-[11.5rem] bg-card"
-            value={selectedMonth}
-            options={monthOptions}
-            onChange={(event) => setSelectedMonth(event.target.value)}
-          />
           <PropertyStatusBadge
             occupancy={performance.occupancyRate}
             revenue={performance.revenue}

@@ -1,11 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   differenceInCalendarDays,
-  endOfMonth,
-  format,
   isWithinInterval,
   parseISO,
-  startOfMonth,
 } from 'date-fns'
 import { Copy, Download, MoreVertical, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -29,6 +26,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { cn } from '../lib/cn'
 import { formatMoneyInputNumber, parseMoneyInput } from '../lib/moneyInput'
 import {
@@ -40,6 +38,7 @@ import {
   validateBookingDates,
 } from '../lib/bookingDates'
 import { CreateReviewLinkDialog } from '../components/CreateReviewLinkDialog'
+import { ExportRecordsDialog } from '../components/ExportRecordsDialog'
 
 interface Booking {
   id: string
@@ -176,56 +175,26 @@ function ReviewLinkCell({
   )
 }
 
-function escapeCsvValue(value: string) {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
-}
-
-function downloadBookingsCsv(
-  bookings: Booking[],
-  propertyMap: Map<string, Property>,
-) {
-  const headers = ['Guest', 'Property', 'Check-in', 'Check-out', 'Nights', 'Amount', 'Source']
-  const rows = bookings.map((booking) => {
-    const property = propertyMap.get(booking.propertyId)
-    const nights = stayNights(booking.checkIn, booking.checkOut)
-    return [
-      booking.guestName,
-      property?.name ?? '',
-      booking.checkIn,
-      booking.checkOut,
-      String(nights),
-      String(booking.amount),
-      booking.source,
-    ]
-  })
-
-  const csv = [headers, ...rows]
-    .map((row) => row.map(escapeCsvValue).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `bookings-${new Date().toISOString().slice(0, 10)}.csv`
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
 export function BookingsPage() {
   const api = useApi()
   const { token } = useAuth()
   const { hasExportRecords, hasWhatsApp, hasUnlimitedReviewLinks, reviewLinkLimit } = usePlanFeatures()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const {
+    selectedMonth,
+    from: monthFrom,
+    to: monthTo,
+    start: monthStart,
+    end: monthEnd,
+    label: selectedMonthLabel,
+  } = useSelectedMonth()
 
   const [page, setPage] = useState(1)
   const [propertyFilter, setPropertyFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
   const [guestName, setGuestName] = useState('')
   const [propertyId, setPropertyId] = useState('')
@@ -314,6 +283,10 @@ export function BookingsPage() {
   }
 
   useEffect(() => {
+    setPage(1)
+  }, [selectedMonth])
+
+  useEffect(() => {
     if (properties.length === 0) return
 
     const hasValidFilter = properties.some((property) => property.id === propertyFilter)
@@ -326,40 +299,32 @@ export function BookingsPage() {
   const queryString = new URLSearchParams({
     page: String(page),
     limit: String(limit),
+    from: monthFrom,
+    to: monthTo,
     ...(propertyFilter ? { propertyId: propertyFilter } : {}),
   }).toString()
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['bookings', page, propertyFilter],
+    queryKey: ['bookings', page, propertyFilter, monthFrom, monthTo],
     queryFn: () => apiRequestPaginated<Booking>(`/bookings?${queryString}`, { token }),
     enabled: Boolean(token && (properties.length === 0 || propertyFilter)),
   })
 
-  const monthRange = useMemo(() => {
-    const now = new Date()
-    return {
-      from: format(startOfMonth(now), 'yyyy-MM-dd'),
-      to: format(endOfMonth(now), 'yyyy-MM-dd'),
-      start: startOfMonth(now),
-      end: endOfMonth(now),
-    }
-  }, [])
-
   const { data: monthBookingsData } = useQuery({
-    queryKey: ['bookings', 'month-revenue', propertyFilter, monthRange.from, monthRange.to],
+    queryKey: ['bookings', 'month-revenue', propertyFilter, monthFrom, monthTo],
     queryFn: () =>
       apiRequestPaginated<Booking>(
-        `/bookings?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        `/bookings?propertyId=${propertyFilter}&from=${monthFrom}&to=${monthTo}&limit=100`,
         { token },
       ),
     enabled: Boolean(token && propertyFilter),
   })
 
   const { data: monthExpensesData } = useQuery({
-    queryKey: ['expenses', 'month', propertyFilter, monthRange.from, monthRange.to],
+    queryKey: ['expenses', 'month', propertyFilter, monthFrom, monthTo],
     queryFn: () =>
       apiRequestPaginated<Expense>(
-        `/expenses?propertyId=${propertyFilter}&from=${monthRange.from}&to=${monthRange.to}&limit=100`,
+        `/expenses?propertyId=${propertyFilter}&from=${monthFrom}&to=${monthTo}&limit=100`,
         { token },
       ),
     enabled: Boolean(token && propertyFilter),
@@ -398,8 +363,12 @@ export function BookingsPage() {
       setDateError('')
       return
     }
+    if (checkIn && (checkIn < monthFrom || checkIn > monthTo)) {
+      setDateError(`Check-in must fall within ${selectedMonthLabel}.`)
+      return
+    }
     setDateError(validateBookingDates(checkIn, checkOut, bookingsForValidation) ?? '')
-  }, [checkIn, checkOut, bookingsForValidation])
+  }, [checkIn, checkOut, bookingsForValidation, monthFrom, monthTo, selectedMonthLabel])
 
   function resetForm() {
     setEditingBookingId(null)
@@ -457,8 +426,8 @@ export function BookingsPage() {
     const monthlyGross = monthBookings
       .filter((b) =>
         isWithinInterval(parseISO(b.checkIn), {
-          start: monthRange.start,
-          end: monthRange.end,
+          start: monthStart,
+          end: monthEnd,
         }),
       )
       .reduce((sum, b) => sum + b.amount, 0)
@@ -482,7 +451,7 @@ export function BookingsPage() {
       avgStay,
       total: data?.meta.total ?? 0,
     }
-  }, [data, monthBookingsData?.data, monthExpensesData?.data, monthRange])
+  }, [data, monthBookingsData?.data, monthExpensesData?.data, monthStart, monthEnd])
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -538,7 +507,7 @@ export function BookingsPage() {
         <div>
           <Typography variant="h2">Bookings Management</Typography>
           <Typography variant="caption" className="mt-1 block">
-            Monitor and manage all reservations across your property portfolio.
+            Monitor and manage reservations for {selectedMonthLabel}.
           </Typography>
         </div>
         <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
@@ -559,12 +528,12 @@ export function BookingsPage() {
           subtext={`${stats.total} total on record`}
         />
         <StatCard
-          label="Monthly revenue"
+          label={`Revenue · ${selectedMonthLabel}`}
           value={formatNaira(stats.monthlyRevenue)}
           subtext={
             stats.monthlyExpenses > 0
               ? `${formatNaira(stats.monthlyExpenses)} expenses deducted`
-              : 'No expenses deducted this month'
+              : `No expenses deducted for ${selectedMonthLabel}`
           }
         />
         <StatCard
@@ -603,11 +572,10 @@ export function BookingsPage() {
           <Button
             variant="outlined"
             className="w-full lg:w-auto"
-            disabled={!hasExportRecords || bookings.length === 0}
+            disabled={!hasExportRecords}
             onClick={() => {
               if (!hasExportRecords) return
-              downloadBookingsCsv(bookings, propertyMap)
-              showToast('Bookings exported')
+              setExportOpen(true)
             }}
           >
             <Download className="size-4" />
@@ -842,6 +810,7 @@ export function BookingsPage() {
         open={dialogOpen}
         onClose={closeDialog}
         title={editingBookingId ? 'Edit Booking' : 'Add Booking'}
+        description={`Dates must fall within ${selectedMonthLabel}.`}
       >
         <div className="flex flex-col gap-4">
           <Input label="Guest name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
@@ -869,6 +838,8 @@ export function BookingsPage() {
               type="date"
               value={checkIn}
               disabled={!propertyId}
+              min={monthFrom}
+              max={monthTo}
               onChange={(e) => {
                 const value = e.target.value
                 if (!value) {
@@ -953,6 +924,13 @@ export function BookingsPage() {
           }}
         />
       ) : null}
+
+      <ExportRecordsDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        properties={properties}
+        defaultPropertyId={propertyFilter}
+      />
     </div>
   )
 }

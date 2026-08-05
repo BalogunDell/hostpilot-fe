@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import { addMonths, format, parseISO } from 'date-fns'
 import { RefreshCw, Shapes } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
 import { Input } from './Input'
@@ -9,8 +9,10 @@ import { MoneyInput } from './MoneyInput'
 import { Select } from './Select'
 import { Typography } from './Typography'
 import { useApi } from '../hooks/useApi'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { useActionsDisabled } from '../context/AppContext'
 import { cn } from '../lib/cn'
+import { currentMonthValue } from '../lib/monthPeriod'
 import { parseMoneyInput } from '../lib/moneyInput'
 import { EXPENSE_CATEGORIES } from '../lib/propertyMetrics'
 
@@ -69,6 +71,15 @@ function ToggleSwitch({
   )
 }
 
+/** Same calendar day next month, clamped to that month's last day. */
+function sameDayNextMonth(dateOnly: string): string {
+  const date = parseISO(dateOnly)
+  const next = addMonths(new Date(date.getFullYear(), date.getMonth(), 1), 1)
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
+  const day = Math.min(date.getDate(), lastDay)
+  return format(new Date(next.getFullYear(), next.getMonth(), day), 'yyyy-MM-dd')
+}
+
 export function AddExpenseDialog({
   open,
   onClose,
@@ -78,12 +89,26 @@ export function AddExpenseDialog({
   onAdded,
 }: AddExpenseDialogProps) {
   const api = useApi()
+  const {
+    selectedMonth,
+    from: monthFrom,
+    to: monthTo,
+    label: selectedMonthLabel,
+  } = useSelectedMonth()
   const recurringId = useId()
+  const viewingPastMonth = selectedMonth !== currentMonthValue()
 
   const [category, setCategory] = useState('')
-  const [expenseDate, setExpenseDate] = useState(
-    defaultExpenseDate ?? format(new Date(), 'yyyy-MM-dd'),
-  )
+  const defaultInMonth = useMemo(() => {
+    if (defaultExpenseDate && defaultExpenseDate >= monthFrom && defaultExpenseDate <= monthTo) {
+      return defaultExpenseDate
+    }
+    const today = format(new Date(), 'yyyy-MM-dd')
+    if (today >= monthFrom && today <= monthTo) return today
+    return monthFrom
+  }, [defaultExpenseDate, monthFrom, monthTo])
+
+  const [expenseDate, setExpenseDate] = useState(defaultInMonth)
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [recurring, setRecurring] = useState(false)
@@ -92,18 +117,21 @@ export function AddExpenseDialog({
   useEffect(() => {
     if (!open) return
     setCategory('')
-    setExpenseDate(defaultExpenseDate ?? format(new Date(), 'yyyy-MM-dd'))
+    setExpenseDate(defaultInMonth)
     setAmount('')
     setDescription('')
     setRecurring(false)
     setFormError('')
-  }, [open, defaultExpenseDate])
+  }, [open, defaultInMonth])
 
   const createExpenseMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const parsedAmount = Math.round(parseMoneyInput(amount))
       if (!category) throw new Error('Select a category')
       if (!expenseDate) throw new Error('Select a date')
+      if (expenseDate < monthFrom || expenseDate > monthTo) {
+        throw new Error(`Expense date must fall within ${selectedMonthLabel}`)
+      }
       if (!parsedAmount || parsedAmount <= 0) throw new Error('Enter a valid amount')
 
       const note = description.trim()
@@ -113,16 +141,31 @@ export function AddExpenseDialog({
           : '[Recurring]'
         : note || undefined
 
-      return api('/expenses', {
+      const payload = {
+        propertyId,
+        category,
+        amount: parsedAmount,
+        description: fullDescription,
+      }
+
+      await api('/expenses', {
         method: 'POST',
         body: JSON.stringify({
-          propertyId,
-          category,
-          amount: parsedAmount,
+          ...payload,
           expenseDate,
-          description: fullDescription,
         }),
       })
+
+      // Backfilling a past month: also create the same recurring expense for next month.
+      if (recurring && viewingPastMonth) {
+        await api('/expenses', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...payload,
+            expenseDate: sameDayNextMonth(expenseDate),
+          }),
+        })
+      }
     },
     onSuccess: () => {
       onAdded?.()
@@ -135,15 +178,24 @@ export function AddExpenseDialog({
 
   function handleSubmit() {
     setFormError('')
+    if (expenseDate && (expenseDate < monthFrom || expenseDate > monthTo)) {
+      setFormError(`Expense date must fall within ${selectedMonthLabel}.`)
+      return
+    }
     createExpenseMutation.mutate()
   }
+
+  const recurringHint =
+    recurring && viewingPastMonth
+      ? 'Also creates this expense for the next month'
+      : 'Automatically record every month'
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       title="Add New Expense"
-      description="Record a new financial outflow for your property."
+      description={`Record an expense for ${selectedMonthLabel}.`}
       className="max-w-lg"
     >
       <div className="flex flex-col gap-5 border-t border-border pt-5">
@@ -179,7 +231,13 @@ export function AddExpenseDialog({
 
           <div className="flex flex-col gap-1.5">
             <FieldLabel>Date</FieldLabel>
-            <Input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+            <Input
+              type="date"
+              value={expenseDate}
+              min={monthFrom}
+              max={monthTo}
+              onChange={(e) => setExpenseDate(e.target.value)}
+            />
           </div>
         </div>
 
@@ -209,7 +267,7 @@ export function AddExpenseDialog({
             <div>
               <Typography variant="label">Recurring Expense</Typography>
               <Typography variant="caption" className="block text-muted-foreground">
-                Automatically record every month
+                {recurringHint}
               </Typography>
             </div>
           </div>

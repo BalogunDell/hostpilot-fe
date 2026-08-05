@@ -1,6 +1,7 @@
 import {
   getBookingLimit,
   getExpenseLimit,
+  getHistoryLookbackMonths,
   getPropertyLimit,
   getReviewLinkLimit,
   hasAutoPublishReviews,
@@ -16,6 +17,7 @@ import {
   hasWhatsAppAutomation,
   hasCalendarSync,
   canHideReviews,
+  isDateWithinHistoryLookback,
   normalizeUserPlan,
   PLAN_LABELS,
   type UserPlan,
@@ -25,6 +27,7 @@ import { useAuth } from '../context/AuthContext'
 export function usePlanFeatures() {
   const { user } = useAuth()
   const plan = normalizeUserPlan(user?.plan ?? 'STARTER')
+  const historyLookbackMonths = getHistoryLookbackMonths(plan)
 
   return {
     plan,
@@ -32,6 +35,7 @@ export function usePlanFeatures() {
     propertyLimit: getPropertyLimit(plan),
     bookingLimit: getBookingLimit(plan),
     expenseLimit: getExpenseLimit(plan),
+    historyLookbackMonths,
     reviewLinkLimit: getReviewLinkLimit(plan),
     hasUnlimitedReviewLinks: hasUnlimitedReviewLinks(plan),
     hasAutoPublishReviews: hasAutoPublishReviews(plan),
@@ -46,6 +50,8 @@ export function usePlanFeatures() {
     hasExportRecords: hasExportRecords(plan),
     hasProfitSummary: hasProfitSummary(plan),
     hasPropertyComparison: hasPropertyComparison(plan),
+    isDateWithinHistoryLookback: (dateOnly: string) =>
+      isDateWithinHistoryLookback(plan, dateOnly),
   }
 }
 
