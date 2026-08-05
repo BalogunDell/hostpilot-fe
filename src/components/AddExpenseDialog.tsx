@@ -19,6 +19,8 @@ interface AddExpenseDialogProps {
   onClose: () => void
   propertyId: string
   propertyName: string
+  /** Defaults the date picker when the dialog opens. */
+  defaultExpenseDate?: string
   onAdded?: () => void
 }
 
@@ -72,13 +74,16 @@ export function AddExpenseDialog({
   onClose,
   propertyId,
   propertyName,
+  defaultExpenseDate,
   onAdded,
 }: AddExpenseDialogProps) {
   const api = useApi()
   const recurringId = useId()
 
   const [category, setCategory] = useState('')
-  const [expenseDate, setExpenseDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [expenseDate, setExpenseDate] = useState(
+    defaultExpenseDate ?? format(new Date(), 'yyyy-MM-dd'),
+  )
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [recurring, setRecurring] = useState(false)
@@ -87,12 +92,12 @@ export function AddExpenseDialog({
   useEffect(() => {
     if (!open) return
     setCategory('')
-    setExpenseDate(format(new Date(), 'yyyy-MM-dd'))
+    setExpenseDate(defaultExpenseDate ?? format(new Date(), 'yyyy-MM-dd'))
     setAmount('')
     setDescription('')
     setRecurring(false)
     setFormError('')
-  }, [open])
+  }, [open, defaultExpenseDate])
 
   const createExpenseMutation = useMutation({
     mutationFn: () => {
