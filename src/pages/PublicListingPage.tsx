@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Star } from 'lucide-react'
-import { Card, Image, Skeleton, Typography } from '../components'
+import { Button, Card, Image, Skeleton, Typography } from '../components'
 import { GuestReviewsList } from '../components/GuestReviewsList'
-import { apiRequest, formatNaira } from '../api/client'
+import { ApiError, apiRequest, formatNaira } from '../api/client'
 
 interface PublicReview {
   guestName: string
@@ -14,7 +14,7 @@ interface PublicReview {
 
 export function PublicListingPage() {
   const { slug } = useParams<{ slug: string }>()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['public-listing', slug],
     queryFn: () =>
       apiRequest<{
@@ -29,7 +29,34 @@ export function PublicListingPage() {
         }
       }>(`/public/listings/${slug}`),
     enabled: Boolean(slug),
+    retry: false,
   })
+
+  if (!slug || isError) {
+    const notFound =
+      !slug || (error instanceof ApiError && (error.status === 404 || error.code === 'NOT_FOUND'))
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-background p-4">
+        <Card padding="lg" className="w-full max-w-lg text-center">
+          <Typography variant="h3">
+            {notFound ? 'Listing not found' : 'Unable to load listing'}
+          </Typography>
+          <Typography variant="body" className="mt-2 text-muted-foreground">
+            {notFound
+              ? 'This listing link is invalid or no longer available.'
+              : error instanceof Error
+                ? error.message
+                : 'Something went wrong. Please try again later.'}
+          </Typography>
+          <div className="mt-6">
+            <Link to="/">
+              <Button allowWhenReadOnly>Go to HostsLedger</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   if (isLoading || !data) {
     return (
