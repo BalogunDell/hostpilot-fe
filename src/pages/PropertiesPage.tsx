@@ -30,6 +30,7 @@ import { ApiError, formatNaira } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../hooks/useApi'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { cn } from '../lib/cn'
 import { PROPERTY_FALLBACK_IMAGE } from '../lib/propertyImages'
 import { getPropertyLimit, normalizeUserPlan, type UserPlan } from '@staypilot/shared'
@@ -118,6 +119,7 @@ export function PropertiesPage() {
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
   const [formError, setFormError] = useState('')
+  const { selectedMonth, label: selectedMonthLabel } = useSelectedMonth()
 
   const { data, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['properties'],
@@ -126,13 +128,14 @@ export function PropertiesPage() {
   })
 
   const { data: performance } = useQuery({
-    queryKey: ['dashboard', 'properties'],
+    queryKey: ['dashboard', 'properties', selectedMonth],
     queryFn: () =>
-      api<{ properties: PropertyPerformance[] }>('/dashboard/properties'),
+      api<{ properties: PropertyPerformance[] }>(
+        `/dashboard/properties?month=${selectedMonth}`,
+      ),
   })
 
   const properties = data ?? []
-  const currentMonth = format(new Date(), 'MMMM')
   const propertyLimit = getPropertyLimit(user?.plan ?? 'STARTER')
   const currentPlan = normalizeUserPlan(user?.plan ?? 'STARTER')
   const upgradePlan = nextPlanForMoreProperties(currentPlan)
@@ -261,7 +264,7 @@ export function PropertiesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end">
         {renderAddPropertyButton()}
       </div>
 
@@ -316,7 +319,7 @@ export function PropertiesPage() {
             <div className="flex flex-col gap-2 border-t border-border px-4 py-3">
               <div className="flex items-center gap-2">
                 <ClipboardList className="size-4 text-muted-foreground" aria-hidden />
-                <Typography variant="label">{currentMonth} breakdown</Typography>
+                <Typography variant="label">{selectedMonthLabel} breakdown</Typography>
               </div>
               <BreakdownLine
                 icon={Wallet}

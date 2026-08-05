@@ -49,6 +49,18 @@ export const PLAN_PROPERTY_LIMITS: Record<UserPlan, number> = {
   PRO: 7,
 }
 
+/**
+ * How many past months (from the current month) a plan can add/update
+ * bookings and expenses for. Current and future dates are always allowed.
+ * Starter: 1, Growth: 3, Pro: 12 (up to a year).
+ */
+export const PLAN_HISTORY_LOOKBACK_MONTHS: Record<UserPlan, number> = {
+  FREE: 1,
+  STARTER: 1,
+  GROWTH: 3,
+  PRO: 12,
+}
+
 /** Null = unlimited. Counted per calendar month. */
 export const PLAN_BOOKING_LIMITS: Record<UserPlan, number | null> = {
   FREE: 5,
@@ -112,6 +124,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       '1 property',
       '5 bookings per month',
       '5 expenses per month',
+      'Add or update records up to 1 month back',
       '5 guest review requests per month',
       '1 WhatsApp booking or expense log per month',
       'Manual booking & expense tracking',
@@ -130,6 +143,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     features: [
       'Up to 3 properties',
       'Unlimited bookings & expenses',
+      'Add or update records up to 3 months back',
       'Unlimited WhatsApp booking & expense logging',
       'Automatic guest review requests',
       'Monthly income & expense reports',
@@ -147,6 +161,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     features: [
       'Up to 7 properties',
       'Unlimited bookings & expenses',
+      'Add or update records up to a year back',
       'Co-host / team access',
       'Role-based access',
       'Portfolio dashboard',
@@ -194,6 +209,53 @@ export function getBookingLimit(plan: UserPlan | string): number | null {
 /** Null means unlimited. */
 export function getExpenseLimit(plan: UserPlan | string): number | null {
   return PLAN_EXPENSE_LIMITS[normalizeUserPlan(plan)]
+}
+
+/** Past months a plan can add or update bookings/expenses for. */
+export function getHistoryLookbackMonths(plan: UserPlan | string): number {
+  return PLAN_HISTORY_LOOKBACK_MONTHS[normalizeUserPlan(plan)]
+}
+
+/** Month-selector options including the current month. */
+export function getHistoryMonthOptionCount(plan: UserPlan | string): number {
+  return getHistoryLookbackMonths(plan) + 1
+}
+
+function padMonth(monthIndex: number): string {
+  return String(monthIndex).padStart(2, '0')
+}
+
+export function toYearMonth(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${padMonth(date.getMonth() + 1)}`
+}
+
+/** Earliest yyyy-MM the plan may edit (current month minus lookback). */
+export function earliestHistoryMonth(plan: UserPlan | string, now: Date = new Date()): string {
+  const lookback = getHistoryLookbackMonths(plan)
+  const date = new Date(now.getFullYear(), now.getMonth() - lookback, 1)
+  return toYearMonth(date)
+}
+
+/**
+ * Past months must fall within the plan lookback window.
+ * Current and future year-months are always allowed (upcoming bookings).
+ */
+export function isYearMonthWithinHistoryLookback(
+  plan: UserPlan | string,
+  yearMonth: string,
+  now: Date = new Date(),
+): boolean {
+  const current = toYearMonth(now)
+  if (yearMonth > current) return true
+  return yearMonth >= earliestHistoryMonth(plan, now)
+}
+
+export function isDateWithinHistoryLookback(
+  plan: UserPlan | string,
+  dateOnly: string,
+  now: Date = new Date(),
+): boolean {
+  return isYearMonthWithinHistoryLookback(plan, dateOnly.slice(0, 7), now)
 }
 
 export function hasMonthAvailabilityCheck(plan?: UserPlan | string): boolean {

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { Typography } from '../components'
+import { Typography } from '../components/Typography'
 import { cn } from '../lib/cn'
 
 type ToastVariant = 'success' | 'error'

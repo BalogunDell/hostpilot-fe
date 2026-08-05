@@ -37,6 +37,7 @@ import { PropertyReportViewer } from '../components/PropertyReportViewer'
 import { useAuth } from '../context/AuthContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
+import { useSelectedMonth } from '../hooks/useSelectedMonth'
 import { PROPERTY_FALLBACK_IMAGE } from '../lib/propertyImages'
 import { cn } from '../lib/cn'
 interface OverviewData {
@@ -309,10 +310,11 @@ export function OverviewPage() {
   const queryClient = useQueryClient()
   const [connectCalendarOpen, setConnectCalendarOpen] = useState(false)
   const [connectPropertyId, setConnectPropertyId] = useState<string | undefined>()
+  const { selectedMonth, label: selectedMonthLabel } = useSelectedMonth()
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['dashboard', 'overview'],
-    queryFn: () => api<OverviewData>('/dashboard/overview'),
+    queryKey: ['dashboard', 'overview', selectedMonth],
+    queryFn: () => api<OverviewData>(`/dashboard/overview?month=${selectedMonth}`),
     enabled: Boolean(token),
   })
 
@@ -401,13 +403,15 @@ export function OverviewPage() {
   return (
     <div className="flex flex-col gap-5 lg:gap-6">
       {/* ── Mobile greeting ── */}
-      <div className="lg:hidden">
-        <Typography variant="h2" className="text-2xl">
-          Good Morning, {firstName}
-        </Typography>
-        <Typography variant="caption" className="mt-1 block text-base text-muted-foreground">
-          Here is what&apos;s happening with your properties today.
-        </Typography>
+      <div className="flex flex-col gap-3 lg:hidden">
+        <div>
+          <Typography variant="h2" className="text-2xl">
+            Good Morning, {firstName}
+          </Typography>
+          <Typography variant="caption" className="mt-1 block text-base text-muted-foreground">
+            Here is what&apos;s happening with your properties for {selectedMonthLabel}.
+          </Typography>
+        </div>
       </div>
 
       {/* ── Mobile stats ── */}
@@ -415,7 +419,7 @@ export function OverviewPage() {
         <Card className="relative flex flex-col gap-2 p-4">
           <div className="flex items-start justify-between">
             <Typography variant="caption" className="font-semibold text-muted-foreground">
-              Total earnings
+              Earnings · {selectedMonthLabel}
             </Typography>
             {revenueChangeLabel ? (
               <Badge
@@ -428,7 +432,7 @@ export function OverviewPage() {
           </div>
           <div className="flex items-end justify-between gap-2">
             <Typography variant="h2" className="text-2xl font-bold">
-              {formatNaira(data.totalRevenue)}
+              {formatNaira(data.monthlyRevenue)}
             </Typography>
             <Wallet className="size-5 text-secondary" aria-hidden />
           </div>
@@ -479,12 +483,12 @@ export function OverviewPage() {
         <Card className="flex flex-col gap-3 border-0 bg-primary-900 p-6 text-primary-foreground">
           <div className="flex items-start justify-between gap-2">
             <Typography variant="caption" className="font-medium text-primary-foreground/70">
-              Total earnings
+              Earnings · {selectedMonthLabel}
             </Typography>
             <Wallet className="size-5 text-tertiary" aria-hidden />
           </div>
           <Typography variant="h2" className="text-3xl font-bold text-primary-foreground">
-            {formatNaira(data.totalRevenue)}
+            {formatNaira(data.monthlyRevenue)}
           </Typography>
           <Typography variant="caption" className="font-medium text-tertiary">
             Net Profit: {formatNaira(data.netProfit)}
@@ -661,7 +665,7 @@ export function OverviewPage() {
                     {hasPropertyComparison ? (
                       <th className="pb-3 pr-4 font-medium">Linked calendar</th>
                     ) : null}
-                    <th className="pb-3 pr-4 font-medium">Monthly Revenue</th>
+                    <th className="pb-3 pr-4 font-medium">Revenue · {selectedMonthLabel}</th>
                     {hasPropertyComparison ? (
                       <th className="w-28 pb-3 pr-4 font-medium">Occupancy</th>
                     ) : null}
@@ -791,7 +795,7 @@ export function OverviewPage() {
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <Typography variant="caption" className="text-muted-foreground">
-                        Monthly Revenue
+                        Revenue · {selectedMonthLabel}
                       </Typography>
                       <Typography variant="label" className="mt-0.5 block">
                         {formatNaira(property.revenue)}
