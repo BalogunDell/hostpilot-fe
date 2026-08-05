@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
+import { endOfMonth, format, parseISO, startOfMonth, subMonths } from 'date-fns'
 import {
   Copy,
   MapPin,
@@ -173,9 +173,27 @@ export function PropertyDetailPage() {
   const [icalUrl, setIcalUrl] = useState('')
   const [calendarPlatform, setCalendarPlatform] = useState<CalendarSyncPlatform>('AIRBNB')
   const [headline, setHeadline] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'))
 
-  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd')
-  const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd')
+  const monthOptions = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => {
+        const date = startOfMonth(subMonths(new Date(), index))
+        return {
+          value: format(date, 'yyyy-MM'),
+          label: format(date, 'MMMM yyyy'),
+        }
+      }),
+    [],
+  )
+
+  const selectedMonthDate = useMemo(
+    () => parseISO(`${selectedMonth}-01`),
+    [selectedMonth],
+  )
+  const monthStart = format(startOfMonth(selectedMonthDate), 'yyyy-MM-dd')
+  const monthEnd = format(endOfMonth(selectedMonthDate), 'yyyy-MM-dd')
+  const selectedMonthLabel = format(selectedMonthDate, 'MMMM yyyy')
 
   const { data: propertyData, isLoading: propertyLoading } = useQuery({
     queryKey: ['property', id],
@@ -184,8 +202,9 @@ export function PropertyDetailPage() {
   })
 
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
-    queryKey: ['dashboard', 'property', id],
-    queryFn: () => api<PropertyDashboard>(`/dashboard/properties/${id}`),
+    queryKey: ['dashboard', 'property', id, selectedMonth],
+    queryFn: () =>
+      api<PropertyDashboard>(`/dashboard/properties/${id}?month=${selectedMonth}`),
     enabled: Boolean(id),
   })
 
@@ -375,6 +394,13 @@ export function PropertyDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Select
+            aria-label="Select month"
+            className="w-[11.5rem] bg-card"
+            value={selectedMonth}
+            options={monthOptions}
+            onChange={(event) => setSelectedMonth(event.target.value)}
+          />
           <PropertyStatusBadge
             occupancy={performance.occupancyRate}
             revenue={performance.revenue}
@@ -395,7 +421,7 @@ export function PropertyDetailPage() {
                   Recurring Expenses Setup
                 </Typography>
                 <Typography variant="caption" className="mt-1 block text-sm text-muted-foreground">
-                  Manage standard monthly operational costs
+                  Manage standard monthly operational costs for {selectedMonthLabel}
                 </Typography>
               </div>
               <button
@@ -435,7 +461,7 @@ export function PropertyDetailPage() {
               ) : expenses.length === 0 ? (
                 <div className="px-4 py-6">
                   <Typography variant="caption" className="text-muted-foreground">
-                    No expenses logged for this month yet.
+                    No expenses logged for {selectedMonthLabel} yet.
                   </Typography>
                 </div>
               ) : (
@@ -501,7 +527,7 @@ export function PropertyDetailPage() {
 
           <Card padding="md" className="flex flex-col gap-5">
             <Typography variant="h4" className="text-xl font-semibold">
-              Monthly Expense Log
+              Expense Log · {selectedMonthLabel}
             </Typography>
 
             <div className="overflow-hidden rounded-xl border border-border">
@@ -535,7 +561,7 @@ export function PropertyDetailPage() {
               ) : expenses.length === 0 ? (
                 <div className="px-4 py-6">
                   <Typography variant="caption" className="text-muted-foreground">
-                    No expenses recorded this month.
+                    No expenses recorded for {selectedMonthLabel}.
                   </Typography>
                 </div>
               ) : (
@@ -578,7 +604,7 @@ export function PropertyDetailPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <PropertyMetricCard label="Monthly Revenue">
+          <PropertyMetricCard label={`Revenue · ${selectedMonthLabel}`}>
             <Typography variant="h2" className="text-3xl font-bold tracking-tight">
               {formatNaira(performance.revenue)}
             </Typography>
@@ -590,7 +616,7 @@ export function PropertyDetailPage() {
               )}
             >
               {revenueTrendPositive ? '↗' : '↘'} {Math.abs(dashboardData.revenueChangePercent)}%
-              {' vs last month'}
+              {' vs prior month'}
             </Typography>
           </PropertyMetricCard>
 
@@ -776,6 +802,11 @@ export function PropertyDetailPage() {
         onClose={() => setAddExpenseOpen(false)}
         propertyId={property.id}
         propertyName={property.name}
+        defaultExpenseDate={
+          selectedMonth === format(new Date(), 'yyyy-MM')
+            ? format(new Date(), 'yyyy-MM-dd')
+            : monthStart
+        }
         onAdded={invalidateExpenses}
       />
 
