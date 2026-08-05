@@ -10,9 +10,11 @@ import {
   Repeat,
   X,
 } from 'lucide-react'
+import { apiRequest } from '../api/client'
 import { cn } from '../lib/cn'
 import { LOGIN_URL, REGISTER_URL, SITE_URL } from '../lib/urls'
 import { buttonVariants } from '../components/Button'
+import { usePageSeo } from '../hooks/usePageSeo'
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -214,17 +216,98 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** Marketing floor until organic volume is higher. */
+const PROPERTY_COUNT_FLOOR = 20
+
+function useCountUp(target: number | null, durationMs = 1800) {
+  const [value, setValue] = useState(1)
+
+  useEffect(() => {
+    if (target == null || target <= 0) {
+      setValue(1)
+      return
+    }
+
+    const from = 1
+    const to = target
+    let frame = 0
+    let start: number | null = null
+    setValue(from)
+
+    const tick = (now: number) => {
+      if (start == null) start = now
+      const progress = Math.min(1, (now - start) / durationMs)
+      // Ease-out so early ticks are visible as 1, 2, 3…
+      const eased = 1 - (1 - progress) ** 2
+      const next = Math.max(from, Math.round(from + (to - from) * eased))
+      setValue(next)
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick)
+      } else {
+        setValue(to)
+      }
+    }
+
+    // Defer one frame so the first paint shows "1" before counting up.
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(tick)
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [target, durationMs])
+
+  return value
+}
+
+function PropertyCountStat({ count }: { count: number | null }) {
+  const displayTarget = count == null ? null : Math.max(count, PROPERTY_COUNT_FLOOR)
+  const animated = useCountUp(displayTarget)
+
+  if (displayTarget == null) return null
+
+  return (
+    <div
+      className="hp-enter mx-auto mt-8 inline-flex max-w-full flex-col items-center gap-1 sm:flex-row sm:gap-4"
+      style={{ animationDelay: '0.35s' }}
+      aria-live="polite"
+    >
+      <div className="relative flex items-center justify-center">
+        <span
+          aria-hidden
+          className="absolute inset-0 -m-3 rounded-full bg-tertiary/20 blur-xl"
+        />
+        <span className="relative font-heading text-[clamp(2.75rem,8vw,3.75rem)] font-extrabold leading-none tracking-[-0.04em] text-primary-900 tabular-nums">
+          {animated.toLocaleString()}
+          <span className="text-tertiary-600">+</span>
+        </span>
+      </div>
+      <div className="text-center sm:text-left">
+        <p className="text-sm font-semibold text-foreground sm:text-base">Properties listed</p>
+        <p className="text-xs text-muted-foreground sm:text-sm">Growing every week on HostsLedger</p>
+      </div>
+    </div>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
 
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [propertyCount, setPropertyCount] = useState<number | null>(null)
   const bento = useInView()
   const ledger = useInView()
   const market = useInView()
   const pricing = useInView()
   const cta = useInView()
+
+  usePageSeo({
+    title: 'HostsLedger — Short-let bookings, expenses & profit tracking',
+    description:
+      'Stop managing shortlets with WhatsApp and spreadsheets. Track bookings, expenses, occupancy and profit in one place — free forever, no card required.',
+    path: '/',
+  })
 
   const lift = 'transition-transform duration-200 hover:scale-[1.03] active:scale-95'
   const darkBtn = cn(
@@ -238,6 +321,20 @@ export function LandingPage() {
     lift,
   )
   const outlineBtn = cn(buttonVariants({ variant: 'outlined', size: 'md' }), lift)
+
+  useEffect(() => {
+    let cancelled = false
+    apiRequest<{ propertyCount: number }>('/public/stats', { logoutOn401: false })
+      .then((data) => {
+        if (!cancelled) setPropertyCount(Math.max(0, data.propertyCount))
+      })
+      .catch(() => {
+        if (!cancelled) setPropertyCount(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="min-h-svh bg-background text-foreground font-body">
@@ -265,7 +362,7 @@ export function LandingPage() {
               Log in
             </a>
             <a href={REGISTER_URL} className={cn(darkBtn, 'hidden md:inline-flex')}>
-              Start free
+              Manage my properties free
             </a>
             <button
               type="button"
@@ -304,7 +401,7 @@ export function LandingPage() {
               Log in
             </a>
             <a href={REGISTER_URL} className={cn(darkBtn, 'w-full')} onClick={() => setMenuOpen(false)}>
-              Start free
+              Manage my properties free
             </a>
           </div>
         )}
@@ -329,33 +426,51 @@ export function LandingPage() {
               className="hp-enter font-heading text-[clamp(2.125rem,7vw,3.75rem)] font-extrabold leading-[1.1] tracking-[-0.035em]"
               style={{ animationDelay: '0.15s' }}
             >
-              Know exactly what your
-              <br className="hidden sm:inline" /> short-lets earn.
+              Stop managing your shortlets
+              <br className="hidden sm:inline" /> with WhatsApp and spreadsheets.
             </h1>
             <p
               className="hp-enter mx-auto mt-5 max-w-[620px] text-[clamp(0.9375rem,2.2vw,1.125rem)] text-muted-foreground"
               style={{ animationDelay: '0.28s' }}
             >
-              Log bookings and expenses manually or with a WhatsApp message, sync your Airbnb &amp;
-              Booking.com calendars, and see your real profit on every property — no spreadsheets.
+              Track bookings, expenses, occupancy and profit in one place. Know exactly how much
+              every property earns.
             </p>
+            <PropertyCountStat count={propertyCount} />
             <div
               className="hp-enter mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
               style={{ animationDelay: '0.4s' }}
             >
               <a href={REGISTER_URL} className={cn(darkBtn, 'w-full sm:w-auto')}>
-                Start free
+                Manage my properties free
               </a>
               <a href="#features" className={cn(outlineBtn, 'w-full sm:w-auto')}>
                 See how it works
               </a>
             </div>
-            <p
-              className="hp-enter mt-4 text-[13px] text-muted-foreground"
+            <ul
+              className="hp-enter mx-auto mt-5 flex max-w-xl flex-col items-center gap-2 text-[13px] text-muted-foreground sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-2"
               style={{ animationDelay: '0.5s' }}
             >
-              Free forever plan · No card required
-            </p>
+              <li className="flex items-center gap-1.5">
+                <span aria-hidden className="text-tertiary">
+                  ✅
+                </span>
+                Free forever plan
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span aria-hidden className="text-tertiary">
+                  ✅
+                </span>
+                No credit card required
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span aria-hidden className="text-tertiary">
+                  ✅
+                </span>
+                Set up in under 2 minutes
+              </li>
+            </ul>
           </div>
         </section>
 
@@ -415,7 +530,7 @@ export function LandingPage() {
             <div className="mb-3.5 grid size-9 place-items-center rounded-[10px] bg-white/10 text-tertiary">
               <FileText className="size-5" aria-hidden />
             </div>
-            <h3 className="mb-2 text-lg font-semibold">Reports in one tap</h3>
+            <h3 className="mb-2 text-lg font-semibold">Know your monthly profit instantly</h3>
             <p className="text-sm text-primary-300">
               Turn a month of bookings and expenses into a clean statement — keep it for your records
               or share it with the owners you manage.
@@ -434,7 +549,7 @@ export function LandingPage() {
             <div className="mb-3.5 grid size-9 place-items-center rounded-[10px] bg-muted">
               <Repeat className="size-5" aria-hidden />
             </div>
-            <h3 className="mb-2 text-lg font-semibold">Never double-book again</h3>
+            <h3 className="mb-2 text-lg font-semibold">Avoid costly double bookings</h3>
             <p className="text-sm text-muted-foreground">
               Sync Airbnb, Booking.com and your direct bookings into one calendar, so two guests
               never land on the same night.
@@ -453,7 +568,7 @@ export function LandingPage() {
             <div className="mb-3.5 grid size-9 place-items-center rounded-[10px] bg-muted">
               <BarChart3 className="size-5" aria-hidden />
             </div>
-            <h3 className="mb-2 text-lg font-semibold">Profit, per property</h3>
+            <h3 className="mb-2 text-lg font-semibold">See which property actually makes you money</h3>
             <p className="text-sm text-muted-foreground">
               Track every expense against every booking and see real net profit — not just what came
               in.
@@ -655,7 +770,7 @@ export function LandingPage() {
               </p>
             </div>
             <a href={REGISTER_URL} className={cn(darkBtn, 'shrink-0')}>
-              Start free
+              Manage my properties free
             </a>
           </div>
         </section>

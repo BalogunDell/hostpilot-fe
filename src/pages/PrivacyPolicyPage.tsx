@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BarChart3 } from 'lucide-react'
+import { usePageSeo } from '../hooks/usePageSeo'
 import { SITE_URL } from '../lib/urls'
 
 const LAST_UPDATED = '26 July 2026'
@@ -17,6 +18,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function PrivacyPolicyPage() {
+  usePageSeo({
+    title: 'Privacy Policy — HostsLedger',
+    description:
+      'How HostsLedger collects, uses, and protects your account, property, booking, and WhatsApp data.',
+    path: '/privacy',
+  })
+
   return (
     <div className="min-h-svh bg-background text-foreground font-body">
       <header className="border-b border-border bg-white/85 backdrop-blur-md">
