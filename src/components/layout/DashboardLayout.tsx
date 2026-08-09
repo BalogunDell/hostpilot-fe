@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
@@ -27,22 +27,31 @@ import { LogoutButton } from './LogoutButton'
 import { ProfileSettingsButton } from './ProfileSettingsButton'
 import { SidebarPlanPill } from './SidebarPlanPill'
 
-const baseNavItems = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true as const },
+type NavIcon = ComponentType<SVGProps<SVGSVGElement>>
+
+interface NavItem {
+  to: string
+  label: string
+  icon: NavIcon
+  end?: boolean
+}
+
+const baseNavItems: NavItem[] = [
+  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
 ]
 
-const reportsNavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
-const reviewsNavItem = { to: '/reviews', label: 'Reviews', icon: Star }
+const reportsNavItem: NavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
+const reviewsNavItem: NavItem = { to: '/reviews', label: 'Reviews', icon: Star }
 
-const mobileTabItems = [
+const mobileTabItems: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
-] as const
+]
 
 function getPageMeta(pathname: string) {
   if (pathname === '/') {
@@ -209,7 +218,7 @@ export function DashboardLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={'end' in item ? item.end : false}
+                end={item.end ?? false}
                 className={({ isActive }) => sidebarLinkClass(isActive)}
                 onClick={() => setMobileNavOpen(false)}
               >
@@ -315,7 +324,7 @@ export function DashboardLayout() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={'end' in item ? item.end : false}
+                  end={item.end ?? false}
                   className={({ isActive }) => mobileTabClass(isActive)}
                 >
                   {({ isActive }) => (
