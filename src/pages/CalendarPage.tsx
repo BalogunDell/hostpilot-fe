@@ -175,12 +175,9 @@ export function CalendarPage() {
       ) : null}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Typography variant="h2">Calendar</Typography>
-          <Typography variant="caption" className="mt-1 block text-muted-foreground">
-            Import bookings from connected Airbnb and Bookings.com calendars.
-          </Typography>
-        </div>
+        <Typography variant="caption" className="text-muted-foreground">
+          Import bookings from connected Airbnb and Bookings.com calendars.
+        </Typography>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
           {!hasConnectedCalendars ? (
             <Button className="w-full sm:w-auto" onClick={handleConnectClick} disabled={!hasCalendarSync}>

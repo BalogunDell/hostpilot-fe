@@ -103,12 +103,9 @@ export function ReportsPage() {
 
   if (!selectedPropertyId || !selectedProperty) {
     return (
-      <div className="flex flex-col gap-3">
-        <Typography variant="h2">Reports</Typography>
-        <Typography variant="body" className="text-muted-foreground">
-          Select a property from the top bar to view reports.
-        </Typography>
-      </div>
+      <Typography variant="body" className="text-muted-foreground">
+        Select a property from the top bar to view reports.
+      </Typography>
     )
   }
 
@@ -116,12 +113,9 @@ export function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Typography variant="h2">Reports</Typography>
-        <Typography variant="caption" className="mt-1 block">
-          Performance for {selectedProperty.name}
-        </Typography>
-      </div>
+      <Typography variant="caption">
+        Performance for {selectedProperty.name}
+      </Typography>
 
       <Card padding="md" className="flex flex-col gap-4">
         <Typography variant="label">Date range</Typography>

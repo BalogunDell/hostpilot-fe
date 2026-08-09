@@ -94,23 +94,17 @@ export function ReviewsPage() {
 
   if (!selectedPropertyId || !selectedProperty) {
     return (
-      <div className="flex flex-col gap-3">
-        <Typography variant="h2">Reviews</Typography>
-        <Typography variant="body" className="text-muted-foreground">
-          Select a property from the top bar to view reviews.
-        </Typography>
-      </div>
+      <Typography variant="body" className="text-muted-foreground">
+        Select a property from the top bar to view reviews.
+      </Typography>
     )
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Typography variant="h2">Reviews</Typography>
-        <Typography variant="caption" className="mt-1 block">
-          Guest feedback for {selectedProperty.name}
-        </Typography>
-      </div>
+      <Typography variant="caption">
+        Guest feedback for {selectedProperty.name}
+      </Typography>
 
       <Card padding="md" className="flex flex-col gap-4">
         <Typography variant="label">Date range</Typography>
