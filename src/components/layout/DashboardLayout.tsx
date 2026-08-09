@@ -20,20 +20,22 @@ import { useApp } from '../../context/AppContext'
 import { useDashboardPeriod } from '../../context/DashboardPeriodContext'
 import { useSelectedProperty } from '../../context/SelectedPropertyContext'
 import { isBlockedReadOnlyAnchor } from '../../context/AppNavigation'
+import { usePlanFeatures } from '../../hooks/usePlanFeatures'
 import { cn } from '../../lib/cn'
 import { DashboardTopBar } from './DashboardTopBar'
 import { LogoutButton } from './LogoutButton'
 import { ProfileSettingsButton } from './ProfileSettingsButton'
 import { SidebarPlanPill } from './SidebarPlanPill'
 
-const navItems = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+const baseNavItems = [
+  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true as const },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
-  { to: '/reports', label: 'Reports', icon: FileBarChart2 },
-  { to: '/reviews', label: 'Reviews', icon: Star },
-] as const
+]
+
+const reportsNavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
+const reviewsNavItem = { to: '/reviews', label: 'Reviews', icon: Star }
 
 const mobileTabItems = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -80,6 +82,7 @@ export function DashboardLayout() {
     setSelectedPropertyId,
     propertiesLoading,
   } = useSelectedProperty()
+  const { hasMonthlyReports, hasUnlimitedReviewLinks } = usePlanFeatures()
   const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
@@ -87,9 +90,26 @@ export function DashboardLayout() {
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [expensePropertyId, setExpensePropertyId] = useState('')
 
+  const navItems = [
+    ...baseNavItems,
+    ...(hasMonthlyReports ? [reportsNavItem] : []),
+    // Growth+: unlimited review workflow. Starter still uses property detail / bookings.
+    ...(hasUnlimitedReviewLinks ? [reviewsNavItem] : []),
+  ]
+
   const pageMeta = getPageMeta(location.pathname)
   const expenseProperty =
     properties.find((property) => property.id === expensePropertyId) ?? selectedProperty
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/reports') && !hasMonthlyReports) {
+      navigate('/', { replace: true })
+      return
+    }
+    if (location.pathname.startsWith('/reviews') && !hasUnlimitedReviewLinks) {
+      navigate('/', { replace: true })
+    }
+  }, [hasMonthlyReports, hasUnlimitedReviewLinks, location.pathname, navigate])
 
   useEffect(() => {
     setMobileNavOpen(false)
