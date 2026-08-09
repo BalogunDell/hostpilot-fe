@@ -89,24 +89,18 @@ export function ExpensesPage() {
 
   if (!selectedPropertyId || !selectedProperty) {
     return (
-      <div className="flex flex-col gap-3">
-        <Typography variant="h2">Expenses</Typography>
-        <Typography variant="body" className="text-muted-foreground">
-          Select a property from the top bar to view expenses.
-        </Typography>
-      </div>
+      <Typography variant="body" className="text-muted-foreground">
+        Select a property from the top bar to view expenses.
+      </Typography>
     )
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Typography variant="h2">Expenses</Typography>
-          <Typography variant="caption" className="mt-1 block">
-            {selectedProperty.name} · {selectedMonthLabel}
-          </Typography>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Typography variant="caption">
+          {selectedProperty.name} · {selectedMonthLabel}
+        </Typography>
         <Button disabled={actionsDisabled} onClick={() => setAddExpenseOpen(true)}>
           <Plus className="size-4" aria-hidden />
           Add expense
