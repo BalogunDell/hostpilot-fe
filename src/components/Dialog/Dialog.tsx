@@ -16,6 +16,8 @@ export interface DialogProps {
   description?: string
   children: ReactNode
   className?: string
+  /** When true, hide the X and ignore backdrop clicks (Escape still closes native dialogs). */
+  preventDismiss?: boolean
 }
 
 export function Dialog({
@@ -25,6 +27,7 @@ export function Dialog({
   description,
   children,
   className,
+  preventDismiss = false,
 }: DialogProps) {
   const titleId = useId()
   const descriptionId = useId()
@@ -64,7 +67,11 @@ export function Dialog({
         'open:animate-in',
         className,
       )}
+      onCancel={(event) => {
+        if (preventDismiss) event.preventDefault()
+      }}
       onClick={(event) => {
+        if (preventDismiss) return
         if (event.target === dialogRef.current) {
           onClose()
         }
@@ -82,15 +89,17 @@ export function Dialog({
               </Typography>
             ) : null}
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            allowWhenReadOnly
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            <X className="size-4" />
-          </Button>
+          {preventDismiss ? null : (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              allowWhenReadOnly
+              onClick={onClose}
+              aria-label="Close dialog"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
         </div>
         {children}
       </div>

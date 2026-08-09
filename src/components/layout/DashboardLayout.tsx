@@ -5,14 +5,20 @@ import {
   BookOpen,
   Building2,
   Calendar,
+  FileBarChart2,
   LayoutDashboard,
+  PlusCircle,
+  Star,
   X,
 } from 'lucide-react'
-import { Button, Select, Typography } from '../../components'
+import { useQueryClient } from '@tanstack/react-query'
+import { AddExpenseDialog, Button, Select, Typography } from '../../components'
 import { ApiStatusBanner } from '../ApiStatusBanner'
 import { ReadOnlyBanner } from '../ReadOnlyBanner'
+import { PropertySelectModal } from '../PropertySelectModal'
 import { useApp } from '../../context/AppContext'
 import { useDashboardPeriod } from '../../context/DashboardPeriodContext'
+import { useSelectedProperty } from '../../context/SelectedPropertyContext'
 import { isBlockedReadOnlyAnchor } from '../../context/AppNavigation'
 import { cn } from '../../lib/cn'
 import { DashboardTopBar } from './DashboardTopBar'
@@ -25,6 +31,8 @@ const navItems = [
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/reports', label: 'Reports', icon: FileBarChart2 },
+  { to: '/reviews', label: 'Reviews', icon: Star },
 ] as const
 
 const mobileTabItems = [
@@ -50,6 +58,12 @@ function getPageMeta(pathname: string) {
   if (pathname.startsWith('/calendar')) {
     return { title: 'Calendar' }
   }
+  if (pathname.startsWith('/reports')) {
+    return { title: 'Reports' }
+  }
+  if (pathname.startsWith('/reviews')) {
+    return { title: 'Reviews' }
+  }
   if (pathname.startsWith('/settings') || pathname.startsWith('/pricing')) {
     return { title: 'Settings' }
   }
@@ -59,12 +73,23 @@ function getPageMeta(pathname: string) {
 export function DashboardLayout() {
   const { readOnly } = useApp()
   const { selectedMonth, setSelectedMonth, monthOptions } = useDashboardPeriod()
+  const {
+    properties,
+    selectedProperty,
+    selectedPropertyId,
+    setSelectedPropertyId,
+    propertiesLoading,
+  } = useSelectedProperty()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false)
+  const [expensePropertyId, setExpensePropertyId] = useState('')
 
-  const visibleNavItems = navItems
   const pageMeta = getPageMeta(location.pathname)
+  const expenseProperty =
+    properties.find((property) => property.id === expensePropertyId) ?? selectedProperty
 
   useEffect(() => {
     setMobileNavOpen(false)
@@ -83,6 +108,12 @@ export function DashboardLayout() {
       navigate('/properties', { replace: true })
     }
   }, [readOnly, location.pathname, navigate])
+
+  function openAddExpense() {
+    setExpensePropertyId(selectedPropertyId ?? properties[0]?.id ?? '')
+    setAddExpenseOpen(true)
+    setMobileNavOpen(false)
+  }
 
   function sidebarLinkClass(isActive: boolean) {
     return cn(
@@ -111,6 +142,11 @@ export function DashboardLayout() {
     event.preventDefault()
     event.stopPropagation()
   }
+
+  const propertyOptions = properties.map((property) => ({
+    label: property.name,
+    value: property.id,
+  }))
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -147,7 +183,7 @@ export function DashboardLayout() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
             return (
               <NavLink
@@ -162,6 +198,16 @@ export function DashboardLayout() {
               </NavLink>
             )
           })}
+
+          <button
+            type="button"
+            className={cn(sidebarLinkClass(false), 'mt-2 text-left')}
+            disabled={readOnly || properties.length === 0}
+            onClick={openAddExpense}
+          >
+            <PlusCircle className="size-4 shrink-0" />
+            Add Expense
+          </button>
         </nav>
 
         <div className="mt-auto border-t border-border pt-4">
@@ -170,31 +216,58 @@ export function DashboardLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col lg:min-h-svh">
-        {/* Mobile header */}
         <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              className="flex min-w-0 items-center gap-2.5 text-left"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+            >
               <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-primary-900 text-tertiary">
                 <BarChart3 className="size-4" aria-hidden />
               </span>
               <Typography variant="h4" className="truncate text-foreground">
                 HostsLedger
               </Typography>
-            </div>
+            </button>
             <ProfileSettingsButton />
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <Typography variant="caption" className="shrink-0 text-muted-foreground">
-              Viewing:
-            </Typography>
-            <div className="min-w-0 flex-1">
-              <Select
-                aria-label="Select month"
-                className="h-9 border-0 bg-muted text-sm"
-                value={selectedMonth}
-                options={monthOptions}
-                onChange={(event) => setSelectedMonth(event.target.value)}
-              />
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Typography variant="caption" className="w-16 shrink-0 text-muted-foreground">
+                Property
+              </Typography>
+              <div className="min-w-0 flex-1">
+                <Select
+                  aria-label="Select property"
+                  className="h-9 border-0 bg-muted text-sm"
+                  value={selectedPropertyId ?? ''}
+                  options={
+                    propertyOptions.length > 0
+                      ? propertyOptions
+                      : [{ label: propertiesLoading ? 'Loading…' : 'No properties', value: '' }]
+                  }
+                  disabled={propertyOptions.length === 0}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedPropertyId(event.target.value)
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Typography variant="caption" className="w-16 shrink-0 text-muted-foreground">
+                Viewing
+              </Typography>
+              <div className="min-w-0 flex-1">
+                <Select
+                  aria-label="Select month"
+                  className="h-9 border-0 bg-muted text-sm"
+                  value={selectedMonth}
+                  options={monthOptions}
+                  onChange={(event) => setSelectedMonth(event.target.value)}
+                />
+              </div>
             </div>
           </div>
         </header>
@@ -244,6 +317,23 @@ export function DashboardLayout() {
           </div>
         </nav>
       </div>
+
+      <PropertySelectModal />
+
+      {expenseProperty ? (
+        <AddExpenseDialog
+          open={addExpenseOpen}
+          onClose={() => setAddExpenseOpen(false)}
+          propertyId={expenseProperty.id}
+          propertyName={expenseProperty.name}
+          propertyOptions={properties}
+          onPropertyChange={setExpensePropertyId}
+          onAdded={() => {
+            void queryClient.invalidateQueries({ queryKey: ['expenses'] })
+            void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+          }}
+        />
+      ) : null}
     </div>
   )
 }
