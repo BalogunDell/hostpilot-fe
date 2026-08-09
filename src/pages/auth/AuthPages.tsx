@@ -48,7 +48,11 @@ export function LoginPage() {
     event.preventDefault()
     setError('')
     try {
-      await login(email, password)
+      const loggedIn = await login(email, password)
+      if (loggedIn.isPlatformAdmin) {
+        navigate('/admin', { replace: true })
+        return
+      }
       navigate(redirectTo && redirectTo.startsWith('/') ? redirectTo : '/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Invalid email or password')
