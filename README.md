@@ -1,6 +1,6 @@
-# StayPilot Frontend (`hostpilot-fe`)
+# HostsLedger Frontend (`hostpilot-fe`)
 
-React + Vite app for StayPilot. Deploy on **Netlify**. API lives in [`hostpilot`](https://github.com/BalogunDell/hostpilot) on Railway.
+React + Vite app for HostsLedger. Deploy on **Netlify**. API lives in [`hostpilot`](https://github.com/BalogunDell/hostpilot) on Railway.
 
 ## Local setup
 
