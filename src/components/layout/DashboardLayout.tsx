@@ -7,12 +7,11 @@ import {
   Calendar,
   FileBarChart2,
   LayoutDashboard,
-  PlusCircle,
+  Receipt,
   Star,
   X,
 } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
-import { AddExpenseDialog, Button, Select, Typography } from '../../components'
+import { Button, Select, Typography } from '../../components'
 import { ApiStatusBanner } from '../ApiStatusBanner'
 import { ReadOnlyBanner } from '../ReadOnlyBanner'
 import { PropertySelectModal } from '../PropertySelectModal'
@@ -41,6 +40,7 @@ const baseNavItems: NavItem[] = [
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
+  { to: '/expenses', label: 'Expenses', icon: Receipt },
 ]
 
 const reportsNavItem: NavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
@@ -69,6 +69,9 @@ function getPageMeta(pathname: string) {
   if (pathname.startsWith('/calendar')) {
     return { title: 'Calendar' }
   }
+  if (pathname.startsWith('/expenses')) {
+    return { title: 'Expenses' }
+  }
   if (pathname.startsWith('/reports')) {
     return { title: 'Reports' }
   }
@@ -85,19 +88,15 @@ export function DashboardLayout() {
   const { readOnly } = useApp()
   const { selectedMonth, setSelectedMonth, monthOptions } = useDashboardPeriod()
   const {
-    properties,
-    selectedProperty,
     selectedPropertyId,
     setSelectedPropertyId,
     propertiesLoading,
+    properties,
   } = useSelectedProperty()
   const { hasMonthlyReports, hasUnlimitedReviewLinks } = usePlanFeatures()
-  const queryClient = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false)
-  const [expensePropertyId, setExpensePropertyId] = useState('')
 
   const navItems = [
     ...baseNavItems,
@@ -107,8 +106,6 @@ export function DashboardLayout() {
   ]
 
   const pageMeta = getPageMeta(location.pathname)
-  const expenseProperty =
-    properties.find((property) => property.id === expensePropertyId) ?? selectedProperty
 
   useEffect(() => {
     if (location.pathname.startsWith('/reports') && !hasMonthlyReports) {
@@ -137,12 +134,6 @@ export function DashboardLayout() {
       navigate('/properties', { replace: true })
     }
   }, [readOnly, location.pathname, navigate])
-
-  function openAddExpense() {
-    setExpensePropertyId(selectedPropertyId ?? properties[0]?.id ?? '')
-    setAddExpenseOpen(true)
-    setMobileNavOpen(false)
-  }
 
   function sidebarLinkClass(isActive: boolean) {
     return cn(
@@ -227,16 +218,6 @@ export function DashboardLayout() {
               </NavLink>
             )
           })}
-
-          <button
-            type="button"
-            className={cn(sidebarLinkClass(false), 'mt-2 text-left')}
-            disabled={readOnly || properties.length === 0}
-            onClick={openAddExpense}
-          >
-            <PlusCircle className="size-4 shrink-0" />
-            Add Expense
-          </button>
         </nav>
 
         <div className="mt-auto border-t border-border pt-4">
@@ -348,21 +329,6 @@ export function DashboardLayout() {
       </div>
 
       <PropertySelectModal />
-
-      {expenseProperty ? (
-        <AddExpenseDialog
-          open={addExpenseOpen}
-          onClose={() => setAddExpenseOpen(false)}
-          propertyId={expenseProperty.id}
-          propertyName={expenseProperty.name}
-          propertyOptions={properties}
-          onPropertyChange={setExpensePropertyId}
-          onAdded={() => {
-            void queryClient.invalidateQueries({ queryKey: ['expenses'] })
-            void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-          }}
-        />
-      ) : null}
     </div>
   )
 }

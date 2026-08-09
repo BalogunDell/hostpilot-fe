@@ -63,6 +63,9 @@ const ReportsPage = lazy(() =>
 const ReviewsPage = lazy(() =>
   import('./pages/ReviewsPage').then((m) => ({ default: m.ReviewsPage })),
 )
+const ExpensesPage = lazy(() =>
+  import('./pages/ExpensesPage').then((m) => ({ default: m.ExpensesPage })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,6 +171,7 @@ function MarketingRoutes() {
       <Route path="/properties/*" element={<RedirectToApp />} />
       <Route path="/bookings" element={<RedirectToApp path="/bookings" />} />
       <Route path="/calendar" element={<RedirectToApp path="/calendar" />} />
+      <Route path="/expenses" element={<RedirectToApp path="/expenses" />} />
       <Route path="/reports" element={<RedirectToApp path="/reports" />} />
       <Route path="/reviews" element={<RedirectToApp path="/reviews" />} />
       <Route path="/settings/*" element={<RedirectToApp />} />
@@ -208,6 +212,7 @@ function AppProductRoutes() {
         <Route path="properties/:id" element={<PropertyDetailPage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="calendar" element={<CalendarPage />} />
+        <Route path="expenses" element={<ExpensesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="pricing" element={<Navigate to="/settings" replace />} />
