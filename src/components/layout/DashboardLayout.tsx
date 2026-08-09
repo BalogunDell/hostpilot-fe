@@ -1,38 +1,57 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   BookOpen,
   Building2,
   Calendar,
+  FileBarChart2,
   LayoutDashboard,
+  Receipt,
+  Star,
   X,
 } from 'lucide-react'
 import { Button, Select, Typography } from '../../components'
 import { ApiStatusBanner } from '../ApiStatusBanner'
 import { ReadOnlyBanner } from '../ReadOnlyBanner'
+import { PropertySelectModal } from '../PropertySelectModal'
 import { useApp } from '../../context/AppContext'
 import { useDashboardPeriod } from '../../context/DashboardPeriodContext'
+import { useSelectedProperty } from '../../context/SelectedPropertyContext'
 import { isBlockedReadOnlyAnchor } from '../../context/AppNavigation'
+import { usePlanFeatures } from '../../hooks/usePlanFeatures'
 import { cn } from '../../lib/cn'
 import { DashboardTopBar } from './DashboardTopBar'
 import { LogoutButton } from './LogoutButton'
 import { ProfileSettingsButton } from './ProfileSettingsButton'
 import { SidebarPlanPill } from './SidebarPlanPill'
 
-const navItems = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/properties', label: 'Properties', icon: Building2 },
-  { to: '/bookings', label: 'Bookings', icon: BookOpen },
-  { to: '/calendar', label: 'Calendar', icon: Calendar },
-] as const
+type NavIcon = ComponentType<SVGProps<SVGSVGElement>>
 
-const mobileTabItems = [
+interface NavItem {
+  to: string
+  label: string
+  icon: NavIcon
+  end?: boolean
+}
+
+const baseNavItems: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
-] as const
+  { to: '/expenses', label: 'Expenses', icon: Receipt },
+]
+
+const reportsNavItem: NavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
+const reviewsNavItem: NavItem = { to: '/reviews', label: 'Reviews', icon: Star }
+
+const mobileTabItems: NavItem[] = [
+  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/properties', label: 'Properties', icon: Building2 },
+  { to: '/bookings', label: 'Bookings', icon: BookOpen },
+  { to: '/calendar', label: 'Calendar', icon: Calendar },
+]
 
 function getPageMeta(pathname: string) {
   if (pathname === '/') {
@@ -50,6 +69,15 @@ function getPageMeta(pathname: string) {
   if (pathname.startsWith('/calendar')) {
     return { title: 'Calendar' }
   }
+  if (pathname.startsWith('/expenses')) {
+    return { title: 'Expenses' }
+  }
+  if (pathname.startsWith('/reports')) {
+    return { title: 'Reports' }
+  }
+  if (pathname.startsWith('/reviews')) {
+    return { title: 'Reviews' }
+  }
   if (pathname.startsWith('/settings') || pathname.startsWith('/pricing')) {
     return { title: 'Settings' }
   }
@@ -59,12 +87,35 @@ function getPageMeta(pathname: string) {
 export function DashboardLayout() {
   const { readOnly } = useApp()
   const { selectedMonth, setSelectedMonth, monthOptions } = useDashboardPeriod()
+  const {
+    selectedPropertyId,
+    setSelectedPropertyId,
+    propertiesLoading,
+    properties,
+  } = useSelectedProperty()
+  const { hasMonthlyReports, hasUnlimitedReviewLinks } = usePlanFeatures()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
-  const visibleNavItems = navItems
+  const navItems = [
+    ...baseNavItems,
+    ...(hasMonthlyReports ? [reportsNavItem] : []),
+    // Growth+: unlimited review workflow. Starter still uses property detail / bookings.
+    ...(hasUnlimitedReviewLinks ? [reviewsNavItem] : []),
+  ]
+
   const pageMeta = getPageMeta(location.pathname)
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/reports') && !hasMonthlyReports) {
+      navigate('/', { replace: true })
+      return
+    }
+    if (location.pathname.startsWith('/reviews') && !hasUnlimitedReviewLinks) {
+      navigate('/', { replace: true })
+    }
+  }, [hasMonthlyReports, hasUnlimitedReviewLinks, location.pathname, navigate])
 
   useEffect(() => {
     setMobileNavOpen(false)
@@ -112,6 +163,11 @@ export function DashboardLayout() {
     event.stopPropagation()
   }
 
+  const propertyOptions = properties.map((property) => ({
+    label: property.name,
+    value: property.id,
+  }))
+
   return (
     <div className="flex min-h-svh bg-background">
       {mobileNavOpen ? (
@@ -147,13 +203,13 @@ export function DashboardLayout() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={'end' in item ? item.end : false}
+                end={item.end ?? false}
                 className={({ isActive }) => sidebarLinkClass(isActive)}
                 onClick={() => setMobileNavOpen(false)}
               >
@@ -170,31 +226,58 @@ export function DashboardLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col lg:min-h-svh">
-        {/* Mobile header */}
         <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              className="flex min-w-0 items-center gap-2.5 text-left"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+            >
               <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-primary-900 text-tertiary">
                 <BarChart3 className="size-4" aria-hidden />
               </span>
               <Typography variant="h4" className="truncate text-foreground">
                 HostsLedger
               </Typography>
-            </div>
+            </button>
             <ProfileSettingsButton />
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <Typography variant="caption" className="shrink-0 text-muted-foreground">
-              Viewing:
-            </Typography>
-            <div className="min-w-0 flex-1">
-              <Select
-                aria-label="Select month"
-                className="h-9 border-0 bg-muted text-sm"
-                value={selectedMonth}
-                options={monthOptions}
-                onChange={(event) => setSelectedMonth(event.target.value)}
-              />
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Typography variant="caption" className="w-16 shrink-0 text-muted-foreground">
+                Property
+              </Typography>
+              <div className="min-w-0 flex-1">
+                <Select
+                  aria-label="Select property"
+                  className="h-9 border-0 bg-muted text-sm"
+                  value={selectedPropertyId ?? ''}
+                  options={
+                    propertyOptions.length > 0
+                      ? propertyOptions
+                      : [{ label: propertiesLoading ? 'Loading…' : 'No properties', value: '' }]
+                  }
+                  disabled={propertyOptions.length === 0}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedPropertyId(event.target.value)
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Typography variant="caption" className="w-16 shrink-0 text-muted-foreground">
+                Viewing
+              </Typography>
+              <div className="min-w-0 flex-1">
+                <Select
+                  aria-label="Select month"
+                  className="h-9 border-0 bg-muted text-sm"
+                  value={selectedMonth}
+                  options={monthOptions}
+                  onChange={(event) => setSelectedMonth(event.target.value)}
+                />
+              </div>
             </div>
           </div>
         </header>
@@ -222,7 +305,7 @@ export function DashboardLayout() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={'end' in item ? item.end : false}
+                  end={item.end ?? false}
                   className={({ isActive }) => mobileTabClass(isActive)}
                 >
                   {({ isActive }) => (
@@ -244,6 +327,8 @@ export function DashboardLayout() {
           </div>
         </nav>
       </div>
+
+      <PropertySelectModal />
     </div>
   )
 }
