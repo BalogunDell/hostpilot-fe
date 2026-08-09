@@ -24,12 +24,13 @@ export function DashboardTopBar({ title }: DashboardTopBarProps) {
   }))
 
   return (
-    <header className="sticky top-0 z-30 hidden items-center justify-between gap-4 border-b border-border bg-card px-6 py-4 lg:flex">
-      <div className="flex min-w-0 flex-wrap items-center gap-3">
-        <Typography variant="h3" className="shrink-0">
+    <header className="sticky top-0 z-30 hidden border-b border-border bg-card px-6 py-4 lg:block">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4">
+        <Typography variant="h3" className="min-w-0 truncate">
           {title}
         </Typography>
-        <div className="flex flex-wrap items-center gap-3">
+
+        <div className="flex items-center justify-center gap-4">
           <div className="flex items-center gap-1.5">
             <Typography variant="caption" className="shrink-0 text-muted-foreground">
               Property:
@@ -66,9 +67,11 @@ export function DashboardTopBar({ title }: DashboardTopBarProps) {
             </div>
           </div>
         </div>
-      </div>
 
-      <ProfileSettingsButton />
+        <div className="flex justify-end">
+          <ProfileSettingsButton />
+        </div>
+      </div>
     </header>
   )
 }
