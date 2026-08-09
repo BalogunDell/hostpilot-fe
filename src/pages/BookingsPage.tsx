@@ -503,13 +503,10 @@ export function BookingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Typography variant="h2">Bookings Management</Typography>
-          <Typography variant="caption" className="mt-1 block">
-            Monitor and manage reservations for {selectedMonthLabel}.
-          </Typography>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Typography variant="caption">
+          Monitor and manage reservations for {selectedMonthLabel}.
+        </Typography>
         <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
           <Plus className="size-4" />
           Add Booking
