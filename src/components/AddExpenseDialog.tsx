@@ -21,6 +21,9 @@ interface AddExpenseDialogProps {
   onClose: () => void
   propertyId: string
   propertyName: string
+  /** When provided, the property field becomes selectable. */
+  propertyOptions?: Array<{ id: string; name: string }>
+  onPropertyChange?: (propertyId: string) => void
   /** Defaults the date picker when the dialog opens. */
   defaultExpenseDate?: string
   onAdded?: () => void
@@ -85,6 +88,8 @@ export function AddExpenseDialog({
   onClose,
   propertyId,
   propertyName,
+  propertyOptions,
+  onPropertyChange,
   defaultExpenseDate,
   onAdded,
 }: AddExpenseDialogProps) {
@@ -203,8 +208,16 @@ export function AddExpenseDialog({
           <FieldLabel>Property</FieldLabel>
           <Select
             value={propertyId}
-            disabled
-            options={[{ label: propertyName, value: propertyId }]}
+            disabled={!propertyOptions?.length || !onPropertyChange}
+            options={
+              propertyOptions?.length
+                ? propertyOptions.map((property) => ({
+                    label: property.name,
+                    value: property.id,
+                  }))
+                : [{ label: propertyName, value: propertyId }]
+            }
+            onChange={(event) => onPropertyChange?.(event.target.value)}
           />
         </div>
 
