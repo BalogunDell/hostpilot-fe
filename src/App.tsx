@@ -53,6 +53,9 @@ const PublicListingPage = lazy(() =>
 const ReviewSubmitPage = lazy(() =>
   import('./pages/ReviewSubmitPage').then((m) => ({ default: m.ReviewSubmitPage })),
 )
+const AdminPage = lazy(() =>
+  import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -132,6 +135,7 @@ function AppHomeRoute() {
   const { token, sessionReady, user } = useAuth()
   if (!sessionReady) return <PageLoader />
   if (!token || !user) return <Navigate to="/login" replace />
+  if (user.isPlatformAdmin) return <Navigate to="/admin" replace />
   if (!user.emailVerified) return <VerifyEmailGate />
   return (
     <DashboardPeriodProvider>
@@ -157,6 +161,7 @@ function MarketingRoutes() {
       <Route path="/calendar" element={<RedirectToApp path="/calendar" />} />
       <Route path="/settings/*" element={<RedirectToApp />} />
       <Route path="/pricing" element={<RedirectToApp path="/settings" />} />
+      <Route path="/admin" element={<RedirectToApp path="/admin" />} />
       <Route path="/cohost-invite/:token" element={<RedirectToApp />} />
       <Route path="/listings/:slug" element={<RedirectToApp />} />
       <Route path="/review/:token" element={<RedirectToApp />} />
@@ -177,6 +182,7 @@ function AppProductRoutes() {
       <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
       <Route path="/listings/:slug" element={<PublicListingPage />} />
       <Route path="/review/:token" element={<ReviewSubmitPage />} />
+      <Route path="/admin" element={<AdminPage />} />
       <Route
         path="/onboarding"
         element={

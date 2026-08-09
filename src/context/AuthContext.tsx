@@ -23,6 +23,8 @@ export interface User {
   readOnly: boolean
   role: 'ADMIN' | 'COHOST'
   emailVerified: boolean
+  /** Platform staff (support@…) — not the property-owner ADMIN role. */
+  isPlatformAdmin?: boolean
   createdAt: string
   billingInterval?: BillingInterval | null
   subscriptionEndsAt?: string | null
@@ -34,7 +36,7 @@ interface AuthContextValue {
   featureFlags: FeatureFlags
   sessionReady: boolean
   restoreError: string | null
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -150,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFeatureFlags(data.featureFlags)
     setRestoreError(null)
     setSessionReady(true)
+    return data.user
   }, [])
 
   const register = useCallback(
