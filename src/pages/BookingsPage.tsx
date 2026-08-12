@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   differenceInCalendarDays,
+  format,
   isWithinInterval,
   parseISO,
 } from 'date-fns'
@@ -137,7 +138,7 @@ function ReviewLinkCell({
     const copyUrl = reviewRequest.reviewUrl || `${window.location.origin}${path}`
 
     return (
-      <div className="flex max-w-[220px] items-center gap-2">
+      <div className="flex min-w-0 max-w-full items-center gap-2">
         <Typography variant="caption" className="min-w-0 truncate font-mono text-xs">
           {path}
         </Typography>
@@ -698,61 +699,82 @@ export function BookingsPage() {
                 const nights = stayNights(booking.checkIn, booking.checkOut)
                 const reviewRequest = reviewRequestByBookingId.get(booking.id)
                 return (
-                  <Card key={booking.id} padding="md">
+                  <Card key={booking.id} padding="md" className="overflow-hidden">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
                         <Avatar
                           alt={booking.guestName}
                           fallback={guestInitials(booking.guestName)}
                           size="sm"
+                          className="shrink-0"
                         />
-                        <div>
-                          <Typography variant="label">{booking.guestName}</Typography>
-                          <Typography variant="caption">{property?.name}</Typography>
+                        <div className="min-w-0 flex-1">
+                          <Typography variant="label" as="p" className="truncate">
+                            {booking.guestName}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            as="p"
+                            className="mt-0.5 truncate text-muted-foreground"
+                          >
+                            {property?.name ?? 'Unknown property'}
+                          </Typography>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Dropdown
-                          align="end"
-                          trigger={
-                            <span
-                              className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                              aria-label={`Actions for ${booking.guestName}`}
-                            >
-                              <MoreVertical className="size-4" />
-                            </span>
-                          }
-                          items={getBookingActionItems(booking)}
-                        />
-                      </div>
+                      <Dropdown
+                        align="end"
+                        trigger={
+                          <span
+                            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            aria-label={`Actions for ${booking.guestName}`}
+                          >
+                            <MoreVertical className="size-4" />
+                          </span>
+                        }
+                        items={getBookingActionItems(booking)}
+                      />
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <Typography variant="caption">Check-in</Typography>
-                        <Typography variant="label">
-                          {formatBookingDisplayDate(booking.checkIn)}
+
+                    <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3">
+                      <div className="min-w-0">
+                        <Typography variant="caption" as="dt" className="block">
+                          Check-in
+                        </Typography>
+                        <Typography variant="label" as="dd" className="mt-0.5 block break-words">
+                          {format(parseISO(booking.checkIn), 'dd MMM yyyy')}
                         </Typography>
                       </div>
-                      <div>
-                        <Typography variant="caption">Check-out</Typography>
-                        <Typography variant="label">
-                          {formatBookingDisplayDate(booking.checkOut)}
+                      <div className="min-w-0">
+                        <Typography variant="caption" as="dt" className="block">
+                          Check-out
+                        </Typography>
+                        <Typography variant="label" as="dd" className="mt-0.5 block break-words">
+                          {format(parseISO(booking.checkOut), 'dd MMM yyyy')}
                         </Typography>
                       </div>
-                      <div>
-                        <Typography variant="caption">Number of Nights</Typography>
-                        <Typography variant="label">
-                          {nights} {nights === 1 ? 'night' : 'nights'}
+                      <div className="min-w-0">
+                        <Typography variant="caption" as="dt" className="block">
+                          Nights
+                        </Typography>
+                        <Typography variant="label" as="dd" className="mt-0.5 block">
+                          {nights}
                         </Typography>
                       </div>
-                      <div>
-                        <Typography variant="caption">Income</Typography>
-                        <Typography variant="label">{formatNaira(booking.amount)}</Typography>
+                      <div className="min-w-0">
+                        <Typography variant="caption" as="dt" className="block">
+                          Income
+                        </Typography>
+                        <Typography variant="label" as="dd" className="mt-0.5 block break-words">
+                          {formatNaira(booking.amount)}
+                        </Typography>
                       </div>
-                    </div>
-                    <div className="mt-3">
-                      <Typography variant="caption">Review link</Typography>
-                      <div className="mt-1">
+                    </dl>
+
+                    <div className="mt-4 border-t border-border pt-3">
+                      <Typography variant="caption" as="p" className="block">
+                        Review link
+                      </Typography>
+                      <div className="mt-1 min-w-0">
                         <ReviewLinkCell
                           booking={booking}
                           reviewRequest={reviewRequest}
@@ -761,10 +783,10 @@ export function BookingsPage() {
                           atReviewLinkLimit={atReviewLinkLimit}
                         />
                       </div>
+                      <Typography variant="caption" as="p" className="mt-2 block text-muted-foreground">
+                        via {booking.source}
+                      </Typography>
                     </div>
-                    <Typography variant="caption" className="mt-2 block">
-                      via {booking.source}
-                    </Typography>
                   </Card>
                 )
               })
