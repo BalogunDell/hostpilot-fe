@@ -1,13 +1,15 @@
-import { useEffect, useState, type ComponentType, type SVGProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   BookOpen,
   Building2,
   Calendar,
+  Ellipsis,
   FileBarChart2,
   LayoutDashboard,
   Receipt,
+  Settings,
   Star,
   X,
 } from 'lucide-react'
@@ -45,8 +47,9 @@ const baseNavItems: NavItem[] = [
 
 const reportsNavItem: NavItem = { to: '/reports', label: 'Reports', icon: FileBarChart2 }
 const reviewsNavItem: NavItem = { to: '/reviews', label: 'Reviews', icon: Star }
+const settingsNavItem: NavItem = { to: '/settings', label: 'Settings', icon: Settings }
 
-const mobileTabItems: NavItem[] = [
+const mobilePrimaryTabs: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
@@ -97,6 +100,7 @@ export function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const navItems = [
     ...baseNavItems,
@@ -104,6 +108,22 @@ export function DashboardLayout() {
     // Growth+: unlimited review workflow. Starter still uses property detail / bookings.
     ...(hasUnlimitedReviewLinks ? [reviewsNavItem] : []),
   ]
+
+  const mobileMoreItems = useMemo(() => {
+    const extras: NavItem[] = [{ to: '/expenses', label: 'Expenses', icon: Receipt }]
+    if (hasMonthlyReports) extras.push(reportsNavItem)
+    if (hasUnlimitedReviewLinks) extras.push(reviewsNavItem)
+    extras.push(settingsNavItem)
+    return extras
+  }, [hasMonthlyReports, hasUnlimitedReviewLinks])
+
+  const moreRoutesActive = mobileMoreItems.some((item) =>
+    item.to === '/settings'
+      ? location.pathname.startsWith('/settings') || location.pathname.startsWith('/pricing')
+      : item.end
+        ? location.pathname === item.to
+        : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  )
 
   const pageMeta = getPageMeta(location.pathname)
 
@@ -119,14 +139,15 @@ export function DashboardLayout() {
 
   useEffect(() => {
     setMobileNavOpen(false)
+    setMoreOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
-    document.body.style.overflow = mobileNavOpen ? 'hidden' : ''
+    document.body.style.overflow = mobileNavOpen || moreOpen ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
     }
-  }, [mobileNavOpen])
+  }, [mobileNavOpen, moreOpen])
 
   useEffect(() => {
     if (!readOnly) return
@@ -299,7 +320,7 @@ export function DashboardLayout() {
           className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"
         >
           <div className="mx-auto flex max-w-lg items-stretch justify-between gap-1">
-            {mobileTabItems.map((item) => {
+            {mobilePrimaryTabs.map((item) => {
               const Icon = item.icon
               return (
                 <NavLink
@@ -307,6 +328,7 @@ export function DashboardLayout() {
                   to={item.to}
                   end={item.end ?? false}
                   className={({ isActive }) => mobileTabClass(isActive)}
+                  onClick={() => setMoreOpen(false)}
                 >
                   {({ isActive }) => (
                     <>
@@ -324,8 +346,76 @@ export function DashboardLayout() {
                 </NavLink>
               )
             })}
+
+            <button
+              type="button"
+              className={mobileTabClass(moreOpen || moreRoutesActive)}
+              aria-label="More navigation"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              <span
+                className={cn(
+                  'flex size-9 items-center justify-center rounded-xl transition-colors',
+                  (moreOpen || moreRoutesActive) && 'bg-secondary text-primary-foreground',
+                )}
+              >
+                {moreOpen ? <X className="size-5 shrink-0" /> : <Ellipsis className="size-5 shrink-0" />}
+              </span>
+              <span className="truncate">More</span>
+            </button>
           </div>
         </nav>
+
+        {moreOpen ? (
+          <>
+            <button
+              type="button"
+              aria-label="Close more menu"
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+              onClick={() => setMoreOpen(false)}
+            />
+            <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-50 px-4 lg:hidden">
+              <div className="mx-auto max-w-lg rounded-2xl border border-border bg-card p-3 shadow-lg">
+                <Typography variant="caption" className="mb-2 block px-1 text-muted-foreground">
+                  More
+                </Typography>
+                <div className="grid grid-cols-3 gap-2">
+                  {mobileMoreItems.map((item) => {
+                    const Icon = item.icon
+                    const active =
+                      item.to === '/settings'
+                        ? location.pathname.startsWith('/settings') ||
+                          location.pathname.startsWith('/pricing')
+                        : location.pathname === item.to ||
+                          location.pathname.startsWith(`${item.to}/`)
+                    return (
+                      <button
+                        key={item.to}
+                        type="button"
+                        className={cn(
+                          'flex flex-col items-center gap-2 rounded-xl px-2 py-3 text-xs font-medium transition-colors',
+                          active
+                            ? 'bg-secondary text-primary-foreground'
+                            : 'bg-muted/60 text-foreground hover:bg-accent',
+                        )}
+                        onClick={() => {
+                          setMoreOpen(false)
+                          navigate(item.to)
+                        }}
+                      >
+                        <span className="grid size-10 place-items-center rounded-full bg-background/80 text-current shadow-sm">
+                          <Icon className="size-5" />
+                        </span>
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <PropertySelectModal />
