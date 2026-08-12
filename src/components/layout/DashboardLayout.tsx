@@ -53,7 +53,6 @@ const mobilePrimaryTabs: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/properties', label: 'Properties', icon: Building2 },
   { to: '/bookings', label: 'Bookings', icon: BookOpen },
-  { to: '/calendar', label: 'Calendar', icon: Calendar },
 ]
 
 function getPageMeta(pathname: string) {
@@ -110,7 +109,10 @@ export function DashboardLayout() {
   ]
 
   const mobileMoreItems = useMemo(() => {
-    const extras: NavItem[] = [{ to: '/expenses', label: 'Expenses', icon: Receipt }]
+    const extras: NavItem[] = [
+      { to: '/calendar', label: 'Calendar', icon: Calendar },
+      { to: '/expenses', label: 'Expenses', icon: Receipt },
+    ]
     if (hasMonthlyReports) extras.push(reportsNavItem)
     if (hasUnlimitedReviewLinks) extras.push(reviewsNavItem)
     extras.push(settingsNavItem)
@@ -394,7 +396,7 @@ export function DashboardLayout() {
                         key={item.to}
                         type="button"
                         className={cn(
-                          'flex flex-col items-center gap-2 rounded-xl px-2 py-3 text-xs font-medium transition-colors',
+                          'flex flex-col items-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-medium transition-colors',
                           active
                             ? 'bg-secondary text-primary-foreground'
                             : 'bg-muted/60 text-foreground hover:bg-accent',
@@ -404,9 +406,7 @@ export function DashboardLayout() {
                           navigate(item.to)
                         }}
                       >
-                        <span className="grid size-10 place-items-center rounded-full bg-background/80 text-current shadow-sm">
-                          <Icon className="size-5" />
-                        </span>
+                        <Icon className="size-4 shrink-0" />
                         {item.label}
                       </button>
                     )
