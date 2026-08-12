@@ -51,7 +51,8 @@ export function isPastCheckout(checkOut: string): boolean {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   checkout.setHours(0, 0, 0, 0)
-  return checkout < today
+  // Checkout day counts — guest has left (or is leaving) that calendar day.
+  return checkout <= today
 }
 
 export function formatBlockedRange(booking: BookingDateRange) {
