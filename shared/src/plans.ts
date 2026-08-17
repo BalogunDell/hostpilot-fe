@@ -80,8 +80,8 @@ export const PLAN_EXPENSE_LIMITS: Record<UserPlan, number | null> = {
 export const PLAN_PRICES_NGN: Record<UserPlan, number> = {
   FREE: 0,
   STARTER: 0,
-  GROWTH: 15_000,
-  PRO: 35_000,
+  GROWTH: 20_000,
+  PRO: 40_000,
 }
 
 export const PLAN_LABELS: Record<UserPlan, string> = {
@@ -137,7 +137,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     id: 'GROWTH',
     name: 'Growth',
     subtitle: 'Run your shortlet properly',
-    priceNgn: 15_000,
+    priceNgn: 20_000,
     propertyLimit: 3,
     recommended: true,
     features: [
@@ -156,7 +156,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     id: 'PRO',
     name: 'Pro',
     subtitle: 'Manage multiple properties and a team',
-    priceNgn: 35_000,
+    priceNgn: 40_000,
     propertyLimit: 7,
     features: [
       'Up to 7 properties',
