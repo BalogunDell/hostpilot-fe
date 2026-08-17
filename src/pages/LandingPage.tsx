@@ -92,7 +92,7 @@ const PLANS = [
   },
   {
     name: 'Growth',
-    price: '\u20A615,000',
+    price: '\u20A620,000',
     suffix: '/month',
     note: 'Run your shortlet properly.',
     features: [
@@ -110,7 +110,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '\u20A635,000',
+    price: '\u20A640,000',
     suffix: '/month',
     note: 'Manage multiple properties and a team.',
     features: [
