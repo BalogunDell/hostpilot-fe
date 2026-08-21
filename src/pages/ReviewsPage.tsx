@@ -56,14 +56,24 @@ export function ReviewsPage() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ reviewId, status }: { reviewId: string; status: 'hidden' }) =>
+    mutationFn: ({
+      reviewId,
+      status,
+    }: {
+      reviewId: string
+      status: 'hidden' | 'approved'
+    }) =>
       api<Review>(`/reviews/${reviewId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['reviews', selectedPropertyId] })
-      showToast('Review hidden from public page')
+      showToast(
+        variables.status === 'hidden'
+          ? 'Review hidden from public page'
+          : 'Review is live on public page again',
+      )
     },
     onError: (error) => {
       showToast(error instanceof Error ? error.message : 'Failed to update review', 'error')
@@ -200,7 +210,11 @@ export function ReviewsPage() {
                             : 'default'
                       }
                     >
-                      {review.status === 'approved' ? 'Live' : review.status}
+                      {review.status === 'approved'
+                        ? 'Live'
+                        : review.status === 'hidden'
+                          ? 'Hidden'
+                          : review.status}
                     </Badge>
                     <Typography variant="caption">
                       {new Date(review.submittedAt).toLocaleDateString()}
@@ -210,7 +224,7 @@ export function ReviewsPage() {
                 <Typography variant="body" className="mt-2">
                   {review.reviewText}
                 </Typography>
-                {canHideReviews && review.status !== 'hidden' ? (
+                {canHideReviews && review.status === 'approved' ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -221,6 +235,19 @@ export function ReviewsPage() {
                     }
                   >
                     Hide from public page
+                  </Button>
+                ) : null}
+                {canHideReviews && review.status === 'hidden' ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="mt-2"
+                    loading={updateMutation.isPending}
+                    onClick={() =>
+                      updateMutation.mutate({ reviewId: review.id, status: 'approved' })
+                    }
+                  >
+                    Show live again
                   </Button>
                 ) : null}
               </div>

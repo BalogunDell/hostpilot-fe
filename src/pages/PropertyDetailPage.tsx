@@ -746,31 +746,34 @@ export function PropertyDetailPage() {
             </>
           )}
 
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 border-t border-border pt-4">
             <Button
+              className="w-full"
               loading={updatePropertyMutation.isPending}
               onClick={() => updatePropertyMutation.mutate()}
             >
               Save changes
             </Button>
             {hasCalendarSync ? (
-              <>
+              <div className="grid gap-2 sm:grid-cols-2">
                 <Button
                   variant="outlined"
+                  className="w-full whitespace-nowrap"
                   loading={connectSyncMutation.isPending}
                   disabled={!icalUrl.trim()}
                   onClick={() => connectSyncMutation.mutate()}
                 >
-                  {sync?.sync ? 'Sync calendar' : 'Connect & sync calendar'}
+                  {sync?.sync ? 'Sync calendar' : 'Connect & sync'}
                 </Button>
                 <Button
                   variant="outlined"
+                  className="w-full whitespace-nowrap"
                   loading={publishListingMutation.isPending}
                   onClick={() => publishListingMutation.mutate()}
                 >
                   Publish listing
                 </Button>
-              </>
+              </div>
             ) : null}
           </div>
         </div>

@@ -37,14 +37,24 @@ export function PropertyReviewsSection({ propertyId }: PropertyReviewsSectionPro
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ reviewId, status }: { reviewId: string; status: 'hidden' }) =>
+    mutationFn: ({
+      reviewId,
+      status,
+    }: {
+      reviewId: string
+      status: 'hidden' | 'approved'
+    }) =>
       api<Review>(`/reviews/${reviewId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviews', propertyId] })
-      showToast('Review hidden from public page')
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['reviews', propertyId] })
+      showToast(
+        variables.status === 'hidden'
+          ? 'Review hidden from public page'
+          : 'Review is live on public page again',
+      )
     },
     onError: (error) => {
       showToast(error instanceof Error ? error.message : 'Failed to update review', 'error')
@@ -128,7 +138,11 @@ export function PropertyReviewsSection({ propertyId }: PropertyReviewsSectionPro
                         : 'default'
                   }
                 >
-                  {review.status === 'approved' ? 'Live' : review.status}
+                  {review.status === 'approved'
+                    ? 'Live'
+                    : review.status === 'hidden'
+                      ? 'Hidden'
+                      : review.status}
                 </Badge>
               </div>
               <Typography variant="body" className="mt-3 text-muted-foreground">
@@ -137,7 +151,7 @@ export function PropertyReviewsSection({ propertyId }: PropertyReviewsSectionPro
               <Typography variant="caption" className="mt-2 block text-muted-foreground">
                 Submitted {new Date(review.submittedAt).toLocaleDateString()}
               </Typography>
-              {review.status === 'approved' && canHideReviews ? (
+              {canHideReviews && review.status === 'approved' ? (
                 <div className="mt-4">
                   <Button
                     size="sm"
@@ -149,6 +163,21 @@ export function PropertyReviewsSection({ propertyId }: PropertyReviewsSectionPro
                     }
                   >
                     Hide from public page
+                  </Button>
+                </div>
+              ) : null}
+              {canHideReviews && review.status === 'hidden' ? (
+                <div className="mt-4">
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    className="bg-card"
+                    loading={updateMutation.isPending}
+                    onClick={() =>
+                      updateMutation.mutate({ reviewId: review.id, status: 'approved' })
+                    }
+                  >
+                    Show live again
                   </Button>
                 </div>
               ) : null}
