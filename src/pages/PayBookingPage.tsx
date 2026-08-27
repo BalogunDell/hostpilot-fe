@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { BOOKING_PLATFORM_FEE_PER_NIGHT_NGN } from '@staypilot/shared'
+import { BOOKING_PLATFORM_FEE_PER_NIGHT_NGN, BOOKING_VAT_PERCENT } from '@staypilot/shared'
 import { Button, Card, Input, Typography } from '../components'
 import { ApiError, apiRequest, formatNaira } from '../api/client'
 import { openPaystackCheckout } from '../lib/paystack'
@@ -16,6 +16,7 @@ interface PayPageData {
   nights: number
   stayAmountNgn: number
   platformFeeNgn: number
+  vatNgn: number
   totalNgn: number
   currency: 'NGN'
   policy: {
@@ -158,6 +159,12 @@ export function PayBookingPage() {
               </span>
               <strong>{formatNaira(data.platformFeeNgn)}</strong>
             </div>
+            {data.vatNgn > 0 ? (
+              <div className="mt-2 flex justify-between gap-3 text-sm">
+                <span>VAT ({BOOKING_VAT_PERCENT}% on fee)</span>
+                <strong>{formatNaira(data.vatNgn)}</strong>
+              </div>
+            ) : null}
             <div className="mt-3 flex justify-between gap-3 border-t border-border pt-3 text-base">
               <span>Total</span>
               <strong>{formatNaira(data.totalNgn)}</strong>

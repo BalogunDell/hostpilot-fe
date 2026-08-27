@@ -3,6 +3,7 @@ import { useState } from 'react'
 import {
   BOOKING_PAYMENT_HOLD_HOURS,
   BOOKING_PLATFORM_FEE_PER_NIGHT_NGN,
+  BOOKING_VAT_PERCENT,
 } from '@staypilot/shared'
 import { Button, Card, Input, Select, Typography } from '../index'
 import { ApiError } from '../../api/client'
@@ -121,7 +122,8 @@ export function PayoutSettingsSection() {
           Guest booking payments settle to your Nigerian bank via Paystack. Bank details are stored
           on Paystack only — HostsLedger keeps a payout reference so we can reuse it on the next
           payment link. Service fee: ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} per
-          night. Pay links expire after {BOOKING_PAYMENT_HOLD_HOURS} hours.
+          night. VAT ({BOOKING_VAT_PERCENT}%) is added on that fee. Pay links expire after{' '}
+          {BOOKING_PAYMENT_HOLD_HOURS} hours.
         </Typography>
       </div>
 

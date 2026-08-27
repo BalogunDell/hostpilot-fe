@@ -383,11 +383,13 @@ export function getPlanCheckoutPriceNgn(plan: PaidPlan, interval: BillingInterva
 
 /**
  * Guest booking payments (Paystack splits).
- * Guest pays stay + platform fee; host receives the stay amount via subaccount.
+ * Guest pays stay + platform fee + VAT on the fee; host receives the stay amount via subaccount.
  * Paystack processing fees are borne by HostsLedger main account (`bearer: account`).
  */
 /** Flat guest service fee charged per night of stay. */
 export const BOOKING_PLATFORM_FEE_PER_NIGHT_NGN = 500
+/** VAT rate applied to HostsLedger’s guest service fee (not the stay). */
+export const BOOKING_VAT_PERCENT = 7.5
 /** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN — percent fee model removed. */
 export const BOOKING_PLATFORM_FEE_PERCENT = 0
 /** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN. */
@@ -400,20 +402,33 @@ export function computeBookingPlatformFeeNgn(nights: number): number {
   return Math.round(nights) * BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
 }
 
+/** VAT on the platform service fee only (whole NGN). */
+export function computeBookingVatOnFeeNgn(platformFeeNgn: number): number {
+  if (!Number.isFinite(platformFeeNgn) || platformFeeNgn <= 0) return 0
+  return Math.round((platformFeeNgn * BOOKING_VAT_PERCENT) / 100)
+}
+
 export function computeBookingCheckoutTotals(
   stayAmountNgn: number,
   nights: number,
 ): {
   stayAmountNgn: number
   platformFeeNgn: number
+  vatNgn: number
+  /** Platform fee + VAT (amount HostsLedger takes via Paystack transaction_charge). */
+  platformTakeNgn: number
   totalNgn: number
 } {
   const stay = Math.max(0, Math.round(stayAmountNgn))
   const platformFeeNgn = computeBookingPlatformFeeNgn(nights)
+  const vatNgn = computeBookingVatOnFeeNgn(platformFeeNgn)
+  const platformTakeNgn = platformFeeNgn + vatNgn
   return {
     stayAmountNgn: stay,
     platformFeeNgn,
-    totalNgn: stay + platformFeeNgn,
+    vatNgn,
+    platformTakeNgn,
+    totalNgn: stay + platformTakeNgn,
   }
 }
 

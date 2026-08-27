@@ -1,5 +1,6 @@
 import {
   BOOKING_PLATFORM_FEE_PER_NIGHT_NGN,
+  BOOKING_VAT_PERCENT,
   computeBookingCheckoutTotals,
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
@@ -26,6 +27,7 @@ interface PayLinkResult {
   nightlyRateNgn: number
   stayAmountNgn: number
   platformFeeNgn: number
+  vatNgn: number
   totalNgn: number
   reused?: boolean
   policy: {
@@ -171,6 +173,10 @@ export function BookingPayLinkDialog({
                   </span>
                   <strong>{formatNaira(preview.platformFeeNgn)}</strong>
                 </div>
+                <div className="mt-1 flex justify-between gap-2">
+                  <span>VAT ({BOOKING_VAT_PERCENT}% on fee)</span>
+                  <strong>{formatNaira(preview.vatNgn)}</strong>
+                </div>
                 <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
                   <span>Guest pays</span>
                   <strong>{formatNaira(preview.totalNgn)}</strong>
@@ -206,6 +212,10 @@ export function BookingPayLinkDialog({
                   {result.nights} night{result.nights === 1 ? '' : 's'})
                 </span>
                 <strong>{formatNaira(result.platformFeeNgn)}</strong>
+              </div>
+              <div className="mt-1 flex justify-between gap-2">
+                <span>VAT ({BOOKING_VAT_PERCENT}% on fee)</span>
+                <strong>{formatNaira(result.vatNgn)}</strong>
               </div>
               <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
                 <span>Guest total</span>
