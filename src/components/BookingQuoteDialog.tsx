@@ -3,6 +3,7 @@ import {
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Select, Typography } from './index'
 import { ApiError, apiRequestPaginated, formatNaira } from '../api/client'
@@ -11,8 +12,11 @@ import { useToast } from '../context/ToastContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
 import {
+  computeAvailableStayRanges,
+  defaultAvailabilityWindow,
   formatBlockedRange,
   minCheckOutDate,
+  upcomingBookedRanges,
   validateBookingDates,
 } from '../lib/bookingDates'
 import { parseMoneyInput } from '../lib/moneyInput'
@@ -111,14 +115,15 @@ export function BookingQuoteDialog({
     enabled: Boolean(token && open),
   })
 
-  const blockedRangesLabel = useMemo(
-    () =>
-      propertyBookings
-        .map((booking) => formatBlockedRange(booking))
-        .slice(0, 8)
-        .join(' · '),
+  const bookedRanges = useMemo(
+    () => upcomingBookedRanges(propertyBookings),
     [propertyBookings],
   )
+
+  const availableRanges = useMemo(() => {
+    const { fromDate, toDate } = defaultAvailabilityWindow(propertyBookings)
+    return computeAvailableStayRanges(propertyBookings, fromDate, toDate)
+  }, [propertyBookings])
 
   useEffect(() => {
     if (!checkIn || !checkOut) {
@@ -244,11 +249,56 @@ export function BookingQuoteDialog({
               options={properties.map((p) => ({ label: p.name, value: p.id }))}
               placeholder={properties.length === 0 ? 'No properties' : 'Select property'}
             />
-            {propertyId && propertyBookings.length > 0 ? (
-              <Typography variant="caption" className="text-muted-foreground">
-                Booked dates: {blockedRangesLabel}
-                {propertyBookings.length > 8 ? ' …' : ''}
-              </Typography>
+            {propertyId ? (
+              <div className="grid gap-3 rounded-xl border border-border bg-muted/20 p-3 sm:grid-cols-2">
+                <div>
+                  <Typography variant="label" className="mb-2 block">
+                    Available dates
+                  </Typography>
+                  {availableRanges.length === 0 ? (
+                    <Typography variant="caption" className="text-muted-foreground">
+                      No open nights in the next 12 months.
+                    </Typography>
+                  ) : (
+                    <ul className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+                      {availableRanges.map((range) => (
+                        <li
+                          key={`available-${range.checkIn}-${range.checkOut}`}
+                          className="flex items-start gap-2 text-sm"
+                        >
+                          <Check
+                            className="mt-0.5 size-3.5 shrink-0 text-secondary"
+                            aria-hidden
+                          />
+                          <span>{formatBlockedRange(range)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <Typography variant="label" className="mb-2 block">
+                    Booked dates
+                  </Typography>
+                  {bookedRanges.length === 0 ? (
+                    <Typography variant="caption" className="text-muted-foreground">
+                      No upcoming bookings.
+                    </Typography>
+                  ) : (
+                    <ul className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+                      {bookedRanges.map((range) => (
+                        <li
+                          key={`booked-${range.checkIn}-${range.checkOut}`}
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
+                        >
+                          <Check className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                          <span>{formatBlockedRange(range)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
