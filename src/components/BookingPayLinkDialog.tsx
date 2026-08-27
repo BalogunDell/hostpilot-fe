@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Typography } from './index'
 import {
   PayoutDetailsFields,
+  emptyPayoutForm,
   payoutPayloadOrUndefined,
   usePayoutStatus,
   validatePayoutForm,
@@ -61,11 +62,7 @@ export function BookingPayLinkDialog({
   const [nightlyRate, setNightlyRate] = useState('')
   const [result, setResult] = useState<PayLinkResult | null>(null)
   const [formError, setFormError] = useState('')
-  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>({
-    businessName: '',
-    bankCode: '',
-    accountNumber: '',
-  })
+  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>(emptyPayoutForm)
   const payoutStatusQuery = usePayoutStatus(open)
 
   useEffect(() => {
@@ -73,7 +70,7 @@ export function BookingPayLinkDialog({
     setNightlyRate('')
     setResult(null)
     setFormError('')
-    setPayoutForm({ businessName: '', bankCode: '', accountNumber: '' })
+    setPayoutForm(emptyPayoutForm())
   }, [open, bookingId])
 
   const preview = useMemo(() => {

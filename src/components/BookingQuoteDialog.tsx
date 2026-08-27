@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Select, Typography } from './index'
 import {
   PayoutDetailsFields,
+  emptyPayoutForm,
   payoutPayloadOrUndefined,
   usePayoutStatus,
   validatePayoutForm,
@@ -95,11 +96,7 @@ export function BookingQuoteDialog({
   const [result, setResult] = useState<QuoteResult | null>(null)
   const [formError, setFormError] = useState('')
   const [dateError, setDateError] = useState('')
-  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>({
-    businessName: '',
-    bankCode: '',
-    accountNumber: '',
-  })
+  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>(emptyPayoutForm)
 
   const payoutStatusQuery = usePayoutStatus(open)
 
@@ -113,7 +110,7 @@ export function BookingQuoteDialog({
     setResult(null)
     setFormError('')
     setDateError('')
-    setPayoutForm({ businessName: '', bankCode: '', accountNumber: '' })
+    setPayoutForm(emptyPayoutForm())
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-only reset
   }, [open])
 

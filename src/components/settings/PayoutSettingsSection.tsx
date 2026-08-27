@@ -10,6 +10,7 @@ import { ApiError } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useApi } from '../../hooks/useApi'
+import { usePaystackAccountResolve } from '../PayoutDetailsFields'
 
 interface PayoutStatus {
   connected: boolean
@@ -35,6 +36,7 @@ export function PayoutSettingsSection() {
   const [businessName, setBusinessName] = useState('')
   const [bankCode, setBankCode] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
+  const [resolvedAccountName, setResolvedAccountName] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
 
   const statusQuery = useQuery({
@@ -48,6 +50,18 @@ export function PayoutSettingsSection() {
     queryFn: () => api<{ banks: BankOption[] }>('/payouts/banks'),
     enabled: Boolean(user),
     staleTime: 60 * 60 * 1000,
+  })
+
+  const resolve = usePaystackAccountResolve({
+    enabled: Boolean(user) && !statusQuery.data?.connected,
+    bankCode,
+    accountNumber,
+    onResolved: (accountName) => {
+      setResolvedAccountName(accountName)
+      setBusinessName((current) => (current.trim() ? current : accountName))
+      setFormError('')
+    },
+    onCleared: () => setResolvedAccountName(null),
   })
 
   const connectMutation = useMutation({
@@ -64,6 +78,7 @@ export function PayoutSettingsSection() {
       setFormError('')
       queryClient.setQueryData(['payouts', 'status'], result)
       setAccountNumber('')
+      setResolvedAccountName(null)
       showToast('Payout account connected')
     },
     onError: (error) => {
@@ -98,16 +113,20 @@ export function PayoutSettingsSection() {
   const banks = banksQuery.data?.banks ?? []
 
   function handleConnect() {
-    if (businessName.trim().length < 2) {
-      setFormError('Enter the account / business name as it appears at your bank.')
-      return
-    }
     if (!bankCode) {
       setFormError('Select your bank.')
       return
     }
     if (!/^\d{10}$/.test(accountNumber.trim())) {
       setFormError('Enter a valid 10-digit account number.')
+      return
+    }
+    if (!resolvedAccountName) {
+      setFormError('Wait for Paystack to verify the account number.')
+      return
+    }
+    if (businessName.trim().length < 2) {
+      setFormError('Enter the account / business name as it appears at your bank.')
       return
     }
     setFormError('')
@@ -166,25 +185,48 @@ export function PayoutSettingsSection() {
               Re-enter your 10-digit account number to reconnect or change banks.
             </Typography>
           ) : null}
-          <Input
-            label="Account / business name"
-            value={businessName}
-            onChange={(event) => setBusinessName(event.target.value)}
-            placeholder="As it appears on your bank account"
-          />
           <Select
             label="Bank"
             value={bankCode}
-            onChange={(event) => setBankCode(event.target.value)}
+            onChange={(event) => {
+              setBankCode(event.target.value)
+              setResolvedAccountName(null)
+            }}
             placeholder="Select bank"
             options={banks.map((bank) => ({ label: bank.name, value: bank.code }))}
           />
           <Input
             label="Account number"
             value={accountNumber}
-            onChange={(event) => setAccountNumber(event.target.value.replace(/\D/g, '').slice(0, 10))}
+            onChange={(event) => {
+              setAccountNumber(event.target.value.replace(/\D/g, '').slice(0, 10))
+              setResolvedAccountName(null)
+            }}
             placeholder="10 digits"
             inputMode="numeric"
+          />
+          {resolve.isResolving ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Verifying account with Paystack…
+            </Typography>
+          ) : resolve.error ? (
+            <Typography variant="caption" className="text-destructive">
+              {resolve.error}
+            </Typography>
+          ) : resolvedAccountName ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Verified: {resolvedAccountName}
+            </Typography>
+          ) : (
+            <Typography variant="caption" className="text-muted-foreground">
+              Select a bank and enter 10 digits to verify with Paystack.
+            </Typography>
+          )}
+          <Input
+            label="Account / business name"
+            value={businessName}
+            onChange={(event) => setBusinessName(event.target.value)}
+            placeholder="As it appears on your bank account"
           />
           {formError ? (
             <Typography variant="caption" className="text-destructive">
@@ -192,11 +234,15 @@ export function PayoutSettingsSection() {
             </Typography>
           ) : (
             <Typography variant="caption" className="text-muted-foreground">
-              We verify the account with Paystack and store settlement details there — not in
-              HostsLedger. You can also enter bank details when creating a payment link.
+              Settlement details are stored on Paystack — not in HostsLedger. You can also enter
+              bank details when creating a payment link.
             </Typography>
           )}
-          <Button loading={connectMutation.isPending} onClick={handleConnect}>
+          <Button
+            loading={connectMutation.isPending}
+            disabled={resolve.isResolving || !resolvedAccountName}
+            onClick={handleConnect}
+          >
             {status?.hasSavedAccount ? 'Save payout account' : 'Connect payout account'}
           </Button>
         </div>
