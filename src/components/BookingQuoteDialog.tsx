@@ -5,7 +5,6 @@ import {
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Select, Typography } from './index'
 import {
@@ -21,14 +20,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useApi } from '../hooks/useApi'
 import { usePlanFeatures } from '../hooks/usePlanFeatures'
-import {
-  computeAvailableStayRanges,
-  defaultAvailabilityWindow,
-  formatBlockedRange,
-  minCheckOutDate,
-  upcomingBookedRanges,
-  validateBookingDates,
-} from '../lib/bookingDates'
+import { minCheckOutDate, validateBookingDates } from '../lib/bookingDates'
 import { parseMoneyInput } from '../lib/moneyInput'
 
 interface PropertyOption {
@@ -131,16 +123,6 @@ export function BookingQuoteDialog({
     enabled: Boolean(token && open),
   })
 
-  const bookedRanges = useMemo(
-    () => upcomingBookedRanges(propertyBookings),
-    [propertyBookings],
-  )
-
-  const availableRanges = useMemo(() => {
-    const { fromDate, toDate } = defaultAvailabilityWindow(propertyBookings)
-    return computeAvailableStayRanges(propertyBookings, fromDate, toDate)
-  }, [propertyBookings])
-
   useEffect(() => {
     if (!checkIn || !checkOut) {
       setDateError('')
@@ -242,10 +224,6 @@ export function BookingQuoteDialog({
       <div className="flex flex-col gap-4">
         {!result ? (
           <>
-            <Typography variant="body" className="text-muted-foreground">
-              Enter available stay dates and the nightly rate for this booking. We’ll block dates
-              that overlap an existing reservation, then create a Paystack link for your guest.
-            </Typography>
             {!hasUnlimitedBookingPayLinks && bookingPayLinkLimit != null ? (
               <Typography variant="caption" className="text-muted-foreground">
                 {planLabel} plan: {quota?.used ?? 0} / {bookingPayLinkLimit} payment links used
@@ -280,57 +258,6 @@ export function BookingQuoteDialog({
               options={properties.map((p) => ({ label: p.name, value: p.id }))}
               placeholder={properties.length === 0 ? 'No properties' : 'Select property'}
             />
-            {propertyId ? (
-              <div className="grid gap-3 rounded-xl border border-border bg-muted/20 p-3 sm:grid-cols-2">
-                <div>
-                  <Typography variant="label" className="mb-2 block">
-                    Available dates
-                  </Typography>
-                  {availableRanges.length === 0 ? (
-                    <Typography variant="caption" className="text-muted-foreground">
-                      No open nights in the next 12 months.
-                    </Typography>
-                  ) : (
-                    <ul className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
-                      {availableRanges.map((range) => (
-                        <li
-                          key={`available-${range.checkIn}-${range.checkOut}`}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <Check
-                            className="mt-0.5 size-3.5 shrink-0 text-secondary"
-                            aria-hidden
-                          />
-                          <span>{formatBlockedRange(range)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div>
-                  <Typography variant="label" className="mb-2 block">
-                    Booked dates
-                  </Typography>
-                  {bookedRanges.length === 0 ? (
-                    <Typography variant="caption" className="text-muted-foreground">
-                      No upcoming bookings.
-                    </Typography>
-                  ) : (
-                    <ul className="flex max-h-40 flex-col gap-1.5 overflow-y-auto">
-                      {bookedRanges.map((range) => (
-                        <li
-                          key={`booked-${range.checkIn}-${range.checkOut}`}
-                          className="flex items-start gap-2 text-sm text-muted-foreground"
-                        >
-                          <Check className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                          <span>{formatBlockedRange(range)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            ) : null}
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 label="Check-in"
@@ -361,9 +288,6 @@ export function BookingQuoteDialog({
               placeholder="Enter rate for this stay"
               disabled={limitReached}
             />
-            <Typography variant="caption" className="text-muted-foreground">
-              Not saved as a default — enter it each time you create a payment link.
-            </Typography>
             <PayoutDetailsFields
               open={open && !result}
               values={payoutForm}
@@ -371,30 +295,12 @@ export function BookingQuoteDialog({
               disabled={limitReached}
             />
             {preview && !dateError ? (
-              <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
-                <div className="flex justify-between gap-2">
-                  <span>
-                    {preview.nights} night{preview.nights === 1 ? '' : 's'} ×{' '}
-                    {formatNaira(preview.rate)}
-                  </span>
-                  <strong>{formatNaira(preview.stayAmountNgn)}</strong>
-                </div>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>
-                    Service fee (₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} ×{' '}
-                    {preview.nights} night{preview.nights === 1 ? '' : 's'})
-                  </span>
-                  <strong>{formatNaira(preview.platformFeeNgn)}</strong>
-                </div>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>VAT ({BOOKING_VAT_PERCENT}% on fee)</span>
-                  <strong>{formatNaira(preview.vatNgn)}</strong>
-                </div>
-                <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
-                  <span>Guest pays</span>
-                  <strong>{formatNaira(preview.totalNgn)}</strong>
-                </div>
-              </div>
+              <Typography variant="body" className="text-muted-foreground">
+                Guest pays <strong className="text-foreground">{formatNaira(preview.totalNgn)}</strong>
+                {preview.nights > 0
+                  ? ` · ${preview.nights} night${preview.nights === 1 ? '' : 's'}`
+                  : ''}
+              </Typography>
             ) : null}
             {formError ? (
               <Typography variant="caption" className="text-destructive">

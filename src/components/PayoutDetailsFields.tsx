@@ -175,20 +175,14 @@ export function PayoutDetailsFields({
   }
 
   if (hasSaved) {
+    const last4 = status?.accountNumberLast4 ? `····${status.accountNumberLast4}` : null
+    const label =
+      [status?.accountName ?? status?.businessName, last4].filter(Boolean).join(' · ') ||
+      'Saved payout account'
     return (
-      <div className="rounded-xl border border-border bg-muted/20 p-3">
-        <Typography variant="label" className="mb-1 block">
-          Guest payments settle to
-        </Typography>
-        <Typography variant="body">
-          {status?.accountName ?? status?.businessName}
-          {status?.bankName ? ` · ${status.bankName}` : ''}
-          {status?.accountNumberLast4 ? ` · ****${status.accountNumberLast4}` : ''}
-        </Typography>
-        <Typography variant="caption" className="mt-1 block text-muted-foreground">
-          Settlement details are stored on Paystack. We only keep a payout reference locally.
-        </Typography>
-      </div>
+      <Typography variant="caption" className="text-muted-foreground">
+        Settles to {label}
+      </Typography>
     )
   }
 
@@ -196,8 +190,7 @@ export function PayoutDetailsFields({
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-3">
       <Typography variant="label">Where should guest payments go?</Typography>
       <Typography variant="caption" className="text-muted-foreground">
-        Enter the Nigerian bank account that should receive stay payments. We verify the account
-        with Paystack first — HostsLedger does not save your account number.
+        Enter a Nigerian bank account — we verify it with Paystack and don’t store the number.
       </Typography>
       <Select
         label="Bank"

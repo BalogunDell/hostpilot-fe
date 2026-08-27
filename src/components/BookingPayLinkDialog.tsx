@@ -183,10 +183,6 @@ export function BookingPayLinkDialog({
           </Typography>
         ) : !result ? (
           <>
-            <Typography variant="body" className="text-muted-foreground">
-              Enter the nightly rate for this stay (it can differ each time). We’ll multiply by the
-              number of nights and create a Paystack link for your guest.
-            </Typography>
             <Typography variant="caption" className="text-muted-foreground">
               {formatBookingDisplayDate(checkIn)} — {formatBookingDisplayDate(checkOut)}
             </Typography>
@@ -203,30 +199,12 @@ export function BookingPayLinkDialog({
               onChange={setPayoutForm}
             />
             {preview ? (
-              <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
-                <div className="flex justify-between gap-2">
-                  <span>
-                    {preview.nights} night{preview.nights === 1 ? '' : 's'} ×{' '}
-                    {formatNaira(preview.rate)}
-                  </span>
-                  <strong>{formatNaira(preview.stayAmountNgn)}</strong>
-                </div>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>
-                    Service fee (₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} ×{' '}
-                    {preview.nights} night{preview.nights === 1 ? '' : 's'})
-                  </span>
-                  <strong>{formatNaira(preview.platformFeeNgn)}</strong>
-                </div>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>VAT ({BOOKING_VAT_PERCENT}% on fee)</span>
-                  <strong>{formatNaira(preview.vatNgn)}</strong>
-                </div>
-                <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
-                  <span>Guest pays</span>
-                  <strong>{formatNaira(preview.totalNgn)}</strong>
-                </div>
-              </div>
+              <Typography variant="body" className="text-muted-foreground">
+                Guest pays <strong className="text-foreground">{formatNaira(preview.totalNgn)}</strong>
+                {preview.nights > 0
+                  ? ` · ${preview.nights} night${preview.nights === 1 ? '' : 's'}`
+                  : ''}
+              </Typography>
             ) : null}
             {formError ? (
               <Typography variant="caption" className="text-destructive">
