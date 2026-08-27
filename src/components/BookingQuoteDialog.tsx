@@ -461,20 +461,6 @@ export function BookingQuoteDialog({
               >
                 Share on WhatsApp
               </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setResult(null)
-                  setNightlyRate('')
-                  setGuestName('')
-                  setCheckIn('')
-                  setCheckOut('')
-                  setFormError('')
-                  setDateError('')
-                }}
-              >
-                New link (new rate)
-              </Button>
               <Button variant="outlined" onClick={handleClose}>
                 Done
               </Button>
