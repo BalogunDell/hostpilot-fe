@@ -1,13 +1,21 @@
+import {
+  computeBookingCheckoutTotals,
+  computeStayTotalFromNightlyRate,
+} from '@staypilot/shared'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Button, Dialog, Input, Typography } from './index'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, Dialog, Input, MoneyInput, Typography } from './index'
 import { ApiError, formatNaira } from '../api/client'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../context/ToastContext'
+import { formatBookingDisplayDate } from '../lib/bookingDates'
+import { parseMoneyInput } from '../lib/moneyInput'
 
 interface PayLinkResult {
   payUrl: string
   expiresAt: string
+  nights: number
+  nightlyRateNgn: number
   stayAmountNgn: number
   platformFeeNgn: number
   totalNgn: number
@@ -25,6 +33,8 @@ interface BookingPayLinkDialogProps {
   onClose: () => void
   bookingId: string
   guestName: string
+  checkIn: string
+  checkOut: string
 }
 
 export function BookingPayLinkDialog({
@@ -32,17 +42,38 @@ export function BookingPayLinkDialog({
   onClose,
   bookingId,
   guestName,
+  checkIn,
+  checkOut,
 }: BookingPayLinkDialogProps) {
   const api = useApi()
   const { showToast } = useToast()
+  const [nightlyRate, setNightlyRate] = useState('')
   const [result, setResult] = useState<PayLinkResult | null>(null)
 
+  useEffect(() => {
+    if (!open) return
+    // Always blank — never reuse a previous or property default rate.
+    setNightlyRate('')
+    setResult(null)
+  }, [open, bookingId])
+
+  const preview = useMemo(() => {
+    const rate = parseMoneyInput(nightlyRate)
+    if (!checkIn || !checkOut || rate <= 0) return null
+    const { nights, stayAmountNgn } = computeStayTotalFromNightlyRate(checkIn, checkOut, rate)
+    if (nights < 1) return null
+    const checkout = computeBookingCheckoutTotals(stayAmountNgn)
+    return { nights, rate, ...checkout }
+  }, [checkIn, checkOut, nightlyRate])
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      api<PayLinkResult>('/booking-payments/pay-links', {
+    mutationFn: () => {
+      const rate = parseMoneyInput(nightlyRate)
+      return api<PayLinkResult>('/booking-payments/pay-links', {
         method: 'POST',
-        body: JSON.stringify({ bookingId }),
-      }),
+        body: JSON.stringify({ bookingId, nightlyRateNgn: rate }),
+      })
+    },
     onSuccess: (data) => {
       setResult(data)
       showToast(data.reused ? 'Existing payment link ready' : 'Payment link created')
@@ -59,29 +90,53 @@ export function BookingPayLinkDialog({
     },
   })
 
-  function handleOpenChange(next: boolean) {
-    if (!next) {
-      setResult(null)
-      onClose()
-      return
-    }
+  function handleClose() {
+    setNightlyRate('')
+    setResult(null)
+    onClose()
   }
 
   return (
-    <Dialog
-      open={open}
-      onClose={() => handleOpenChange(false)}
-      title={`Collect payment · ${guestName}`}
-    >
+    <Dialog open={open} onClose={handleClose} title={`Collect payment · ${guestName}`}>
       <div className="flex flex-col gap-4">
         {!result ? (
           <>
             <Typography variant="body" className="text-muted-foreground">
-              Create a shareable Paystack link. The guest pays the stay amount plus HostsLedger’s
-              service fee; the stay amount settles to your connected bank account.
+              Enter the nightly rate for this stay (it can differ each time). We’ll multiply by the
+              number of nights and create a Paystack link for your guest.
             </Typography>
+            <Typography variant="caption" className="text-muted-foreground">
+              {formatBookingDisplayDate(checkIn)} — {formatBookingDisplayDate(checkOut)}
+            </Typography>
+            <MoneyInput
+              label="Amount per night (NGN)"
+              value={nightlyRate}
+              onValueChange={setNightlyRate}
+              placeholder="45,000"
+              autoFocus
+            />
+            {preview ? (
+              <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {preview.nights} night{preview.nights === 1 ? '' : 's'} ×{' '}
+                    {formatNaira(preview.rate)}
+                  </span>
+                  <strong>{formatNaira(preview.stayAmountNgn)}</strong>
+                </div>
+                <div className="mt-1 flex justify-between gap-2">
+                  <span>Service fee (guest)</span>
+                  <strong>{formatNaira(preview.platformFeeNgn)}</strong>
+                </div>
+                <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
+                  <span>Guest pays</span>
+                  <strong>{formatNaira(preview.totalNgn)}</strong>
+                </div>
+              </div>
+            ) : null}
             <Button
               loading={createMutation.isPending}
+              disabled={!preview || createMutation.isPending}
               onClick={() => createMutation.mutate()}
             >
               Create payment link
@@ -91,7 +146,10 @@ export function BookingPayLinkDialog({
           <>
             <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
               <div className="flex justify-between gap-2">
-                <span>Stay</span>
+                <span>
+                  {result.nights} night{result.nights === 1 ? '' : 's'} ×{' '}
+                  {formatNaira(result.nightlyRateNgn)}
+                </span>
                 <strong>{formatNaira(result.stayAmountNgn)}</strong>
               </div>
               <div className="mt-1 flex justify-between gap-2">
@@ -116,7 +174,18 @@ export function BookingPayLinkDialog({
               >
                 Copy link
               </Button>
-              <Button variant="outlined" onClick={() => handleOpenChange(false)}>
+              <Button
+                variant="outlined"
+                onClick={async () => {
+                  const text = encodeURIComponent(
+                    `Hi ${guestName}, here is your HostsLedger payment link for your stay:\n${result.payUrl}`,
+                  )
+                  window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer')
+                }}
+              >
+                Share on WhatsApp
+              </Button>
+              <Button variant="outlined" onClick={handleClose}>
                 Done
               </Button>
             </div>

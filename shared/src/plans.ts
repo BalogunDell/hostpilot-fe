@@ -94,6 +94,11 @@ export const PLAN_LABELS: Record<UserPlan, string> = {
 export const STARTER_REVIEW_LINK_LIMIT = 5
 export const STARTER_PUBLIC_REVIEW_LIMIT = 5
 
+/** Lifetime guest payment links a Starter host can generate. */
+export const STARTER_BOOKING_PAY_LINK_LIMIT = 3
+/** Lifetime guest payment links a Growth host can generate. */
+export const GROWTH_BOOKING_PAY_LINK_LIMIT = 15
+
 /** Starter plan: one successful WhatsApp action (any kind) per calendar month. */
 export const FREE_WHATSAPP_MONTHLY_QUERIES = 1
 
@@ -126,6 +131,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       '5 expenses per month',
       'Add or update records up to 1 month back',
       '5 guest review requests per month',
+      '3 guest payment links',
       '1 WhatsApp booking or expense log per month',
       'Manual booking & expense tracking',
       'Calendar view',
@@ -144,6 +150,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       'Up to 3 properties',
       'Unlimited bookings & expenses',
       'Add or update records up to 3 months back',
+      '15 guest payment links',
       'Unlimited WhatsApp booking & expense logging',
       'Automatic guest review requests',
       'Monthly income & expense reports',
@@ -161,6 +168,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     features: [
       'Up to 7 properties',
       'Unlimited bookings & expenses',
+      'Unlimited guest payment links',
       'Add or update records up to a year back',
       'Co-host / team access',
       'Role-based access',
@@ -271,6 +279,18 @@ export function getReviewLinkLimit(plan: UserPlan | string): number | null {
 
 export function hasUnlimitedReviewLinks(plan: UserPlan | string): boolean {
   return comparePlans(plan, 'GROWTH') >= 0
+}
+
+/** Lifetime guest payment-link quota. `null` means unlimited (Pro). */
+export function getBookingPayLinkLimit(plan: UserPlan | string): number | null {
+  if (hasUnlimitedBookingPayLinks(plan)) return null
+  const normalized = normalizeUserPlan(plan)
+  if (normalized === 'GROWTH') return GROWTH_BOOKING_PAY_LINK_LIMIT
+  return STARTER_BOOKING_PAY_LINK_LIMIT
+}
+
+export function hasUnlimitedBookingPayLinks(plan: UserPlan | string): boolean {
+  return normalizeUserPlan(plan) === 'PRO'
 }
 
 export function hasAutoPublishReviews(_plan?: UserPlan | string): boolean {
@@ -389,6 +409,29 @@ export function computeBookingCheckoutTotals(stayAmountNgn: number): {
     stayAmountNgn: stay,
     platformFeeNgn,
     totalNgn: stay + platformFeeNgn,
+  }
+}
+
+/** Nights between ISO date-only check-in and check-out (checkout day not charged). */
+export function countStayNights(checkIn: string, checkOut: string): number {
+  const start = Date.parse(`${checkIn}T00:00:00.000Z`)
+  const end = Date.parse(`${checkOut}T00:00:00.000Z`)
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return 0
+  }
+  return Math.round((end - start) / 86_400_000)
+}
+
+export function computeStayTotalFromNightlyRate(
+  checkIn: string,
+  checkOut: string,
+  nightlyRateNgn: number,
+): { nights: number; stayAmountNgn: number } {
+  const nights = countStayNights(checkIn, checkOut)
+  const rate = Math.max(0, Math.round(nightlyRateNgn))
+  return {
+    nights,
+    stayAmountNgn: nights * rate,
   }
 }
 

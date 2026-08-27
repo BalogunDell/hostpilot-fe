@@ -1,5 +1,6 @@
 import {
   getBookingLimit,
+  getBookingPayLinkLimit,
   getExpenseLimit,
   getHistoryLookbackMonths,
   getPropertyLimit,
@@ -13,6 +14,7 @@ import {
   hasProfitSummary,
   hasPropertyComparison,
   hasShareablePublicReviewPages,
+  hasUnlimitedBookingPayLinks,
   hasUnlimitedReviewLinks,
   hasWhatsAppAutomation,
   hasCalendarSync,
@@ -38,6 +40,8 @@ export function usePlanFeatures() {
     historyLookbackMonths,
     reviewLinkLimit: getReviewLinkLimit(plan),
     hasUnlimitedReviewLinks: hasUnlimitedReviewLinks(plan),
+    bookingPayLinkLimit: getBookingPayLinkLimit(plan),
+    hasUnlimitedBookingPayLinks: hasUnlimitedBookingPayLinks(plan),
     hasAutoPublishReviews: hasAutoPublishReviews(plan),
     canHideReviews: canHideReviews(plan),
     hasShareablePublicReviewPages: hasShareablePublicReviewPages(plan),
