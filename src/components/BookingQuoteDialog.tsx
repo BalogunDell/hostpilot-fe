@@ -7,6 +7,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Select, Typography } from './index'
+import {
+  PayoutDetailsFields,
+  payoutPayloadOrUndefined,
+  usePayoutStatus,
+  validatePayoutForm,
+  type PayoutFormValues,
+} from './PayoutDetailsFields'
 import { ApiError, apiRequestPaginated, formatNaira } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -86,6 +93,13 @@ export function BookingQuoteDialog({
   const [result, setResult] = useState<QuoteResult | null>(null)
   const [formError, setFormError] = useState('')
   const [dateError, setDateError] = useState('')
+  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>({
+    businessName: '',
+    bankCode: '',
+    accountNumber: '',
+  })
+
+  const payoutStatusQuery = usePayoutStatus(open)
 
   useEffect(() => {
     if (!open) return
@@ -97,6 +111,7 @@ export function BookingQuoteDialog({
     setResult(null)
     setFormError('')
     setDateError('')
+    setPayoutForm({ businessName: '', bankCode: '', accountNumber: '' })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-only reset
   }, [open])
 
@@ -151,7 +166,12 @@ export function BookingQuoteDialog({
       if (availabilityError) {
         throw new Error(availabilityError)
       }
+      const payoutError = validatePayoutForm(payoutStatusQuery.data, payoutForm)
+      if (payoutError) {
+        throw new Error(payoutError)
+      }
       const rate = parseMoneyInput(nightlyRate)
+      const payout = payoutPayloadOrUndefined(payoutStatusQuery.data, payoutForm)
       return api<QuoteResult>('/booking-payments/quotes', {
         method: 'POST',
         body: JSON.stringify({
@@ -160,6 +180,15 @@ export function BookingQuoteDialog({
           checkIn,
           checkOut,
           nightlyRateNgn: rate,
+          ...(payout
+            ? {
+                payout: {
+                  businessName: payout.businessName.trim(),
+                  bankCode: payout.bankCode,
+                  accountNumber: payout.accountNumber.trim(),
+                },
+              }
+            : {}),
         }),
       })
     },
@@ -169,6 +198,7 @@ export function BookingQuoteDialog({
       showToast('Payment link ready to share')
       void queryClient.invalidateQueries({ queryKey: ['bookings'] })
       void queryClient.invalidateQueries({ queryKey: ['booking-payments', 'quota'] })
+      void queryClient.invalidateQueries({ queryKey: ['payouts', 'status'] })
     },
     onError: (error) => {
       setFormError(
@@ -334,6 +364,12 @@ export function BookingQuoteDialog({
             <Typography variant="caption" className="text-muted-foreground">
               Not saved as a default — enter it each time you create a payment link.
             </Typography>
+            <PayoutDetailsFields
+              open={open && !result}
+              values={payoutForm}
+              onChange={setPayoutForm}
+              disabled={limitReached}
+            />
             {preview && !dateError ? (
               <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
                 <div className="flex justify-between gap-2">

@@ -12,6 +12,7 @@ import { useApi } from '../../hooks/useApi'
 
 interface PayoutStatus {
   connected: boolean
+  hasSavedAccount?: boolean
   businessName?: string
   bankName?: string | null
   accountName?: string | null
@@ -117,19 +118,21 @@ export function PayoutSettingsSection() {
       <div>
         <Typography variant="h4">Receive guest payments</Typography>
         <Typography variant="body" className="mt-1 text-muted-foreground">
-          Connect a Nigerian bank account so guests can pay bookings online. Money settles to your
-          bank via Paystack. HostsLedger only stores a Paystack payout code — not your full account
-          number — and takes a ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} guest
-          service fee per night. Pay links expire after{' '}
-          {BOOKING_PAYMENT_HOLD_HOURS} hours.
+          Guest booking payments settle to your Nigerian bank via Paystack. If you’ve already saved
+          an account, we reuse it when you create a payment link. Otherwise you can enter bank
+          details in the Share payment link modal. HostsLedger stores a Paystack payout code and
+          last 4 digits only — and takes a ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()}{' '}
+          guest service fee per night. Pay links expire after {BOOKING_PAYMENT_HOLD_HOURS} hours.
         </Typography>
       </div>
 
       {statusQuery.isLoading ? (
         <Typography variant="caption">Loading payout status…</Typography>
-      ) : status?.connected ? (
+      ) : status?.connected || status?.hasSavedAccount ? (
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4">
-          <Typography variant="label">Connected</Typography>
+          <Typography variant="label">
+            {status.connected ? 'Connected' : 'Saved payout account'}
+          </Typography>
           <Typography variant="body">
             {status.accountName ?? status.businessName}
             {status.bankName ? ` · ${status.bankName}` : ''}
@@ -140,19 +143,28 @@ export function PayoutSettingsSection() {
             abandoned payments leave the booking unpaid until the guest retries or you create a new
             link.
           </Typography>
-          <div>
-            <Button
-              variant="outlined"
-              size="sm"
-              loading={disconnectMutation.isPending}
-              onClick={() => disconnectMutation.mutate()}
-            >
-              Disconnect
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            {status.connected ? (
+              <Button
+                variant="outlined"
+                size="sm"
+                loading={disconnectMutation.isPending}
+                onClick={() => disconnectMutation.mutate()}
+              >
+                Disconnect
+              </Button>
+            ) : null}
           </div>
         </div>
-      ) : (
+      ) : null}
+
+      {!statusQuery.isLoading && !status?.connected ? (
         <div className="flex flex-col gap-3">
+          {status?.hasSavedAccount && !status.connected ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Re-enter your 10-digit account number to reconnect or change banks.
+            </Typography>
+          ) : null}
           <Input
             label="Account / business name"
             value={businessName}
@@ -184,10 +196,10 @@ export function PayoutSettingsSection() {
             </Typography>
           )}
           <Button loading={connectMutation.isPending} onClick={handleConnect}>
-            Connect payout account
+            {status?.hasSavedAccount ? 'Save payout account' : 'Connect payout account'}
           </Button>
         </div>
-      )}
+      ) : null}
     </Card>
   )
 }

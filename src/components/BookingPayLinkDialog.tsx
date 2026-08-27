@@ -3,9 +3,16 @@ import {
   computeBookingCheckoutTotals,
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Typography } from './index'
+import {
+  PayoutDetailsFields,
+  payoutPayloadOrUndefined,
+  usePayoutStatus,
+  validatePayoutForm,
+  type PayoutFormValues,
+} from './PayoutDetailsFields'
 import { ApiError, formatNaira } from '../api/client'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../context/ToastContext'
@@ -48,14 +55,23 @@ export function BookingPayLinkDialog({
 }: BookingPayLinkDialogProps) {
   const api = useApi()
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   const [nightlyRate, setNightlyRate] = useState('')
   const [result, setResult] = useState<PayLinkResult | null>(null)
+  const [formError, setFormError] = useState('')
+  const [payoutForm, setPayoutForm] = useState<PayoutFormValues>({
+    businessName: '',
+    bankCode: '',
+    accountNumber: '',
+  })
+  const payoutStatusQuery = usePayoutStatus(open)
 
   useEffect(() => {
     if (!open) return
-    // Always blank — never reuse a previous or property default rate.
     setNightlyRate('')
     setResult(null)
+    setFormError('')
+    setPayoutForm({ businessName: '', bankCode: '', accountNumber: '' })
   }, [open, bookingId])
 
   const preview = useMemo(() => {
@@ -69,31 +85,49 @@ export function BookingPayLinkDialog({
 
   const createMutation = useMutation({
     mutationFn: () => {
+      const payoutError = validatePayoutForm(payoutStatusQuery.data, payoutForm)
+      if (payoutError) throw new Error(payoutError)
       const rate = parseMoneyInput(nightlyRate)
+      const payout = payoutPayloadOrUndefined(payoutStatusQuery.data, payoutForm)
       return api<PayLinkResult>('/booking-payments/pay-links', {
         method: 'POST',
-        body: JSON.stringify({ bookingId, nightlyRateNgn: rate }),
+        body: JSON.stringify({
+          bookingId,
+          nightlyRateNgn: rate,
+          ...(payout
+            ? {
+                payout: {
+                  businessName: payout.businessName.trim(),
+                  bankCode: payout.bankCode,
+                  accountNumber: payout.accountNumber.trim(),
+                },
+              }
+            : {}),
+        }),
       })
     },
     onSuccess: (data) => {
       setResult(data)
+      setFormError('')
       showToast(data.reused ? 'Existing payment link ready' : 'Payment link created')
+      void queryClient.invalidateQueries({ queryKey: ['payouts', 'status'] })
     },
     onError: (error) => {
-      showToast(
+      const message =
         error instanceof ApiError
           ? error.message
           : error instanceof Error
             ? error.message
-            : 'Could not create payment link',
-        'error',
-      )
+            : 'Could not create payment link'
+      setFormError(message)
+      showToast(message, 'error')
     },
   })
 
   function handleClose() {
     setNightlyRate('')
     setResult(null)
+    setFormError('')
     onClose()
   }
 
@@ -116,6 +150,11 @@ export function BookingPayLinkDialog({
               placeholder="45,000"
               autoFocus
             />
+            <PayoutDetailsFields
+              open={open && !result}
+              values={payoutForm}
+              onChange={setPayoutForm}
+            />
             {preview ? (
               <div className="rounded-xl border border-border bg-muted/20 p-3 text-sm">
                 <div className="flex justify-between gap-2">
@@ -137,6 +176,11 @@ export function BookingPayLinkDialog({
                   <strong>{formatNaira(preview.totalNgn)}</strong>
                 </div>
               </div>
+            ) : null}
+            {formError ? (
+              <Typography variant="caption" className="text-destructive">
+                {formError}
+              </Typography>
             ) : null}
             <Button
               loading={createMutation.isPending}
