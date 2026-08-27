@@ -77,7 +77,7 @@ export function PayoutDetailsFields({
           {status?.accountNumberLast4 ? ` · ****${status.accountNumberLast4}` : ''}
         </Typography>
         <Typography variant="caption" className="mt-1 block text-muted-foreground">
-          Saved from your Paystack payout account. You can update it in Settings anytime.
+          Settlement details are stored on Paystack. We only keep a payout reference locally.
         </Typography>
       </div>
     )
@@ -87,8 +87,8 @@ export function PayoutDetailsFields({
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-3">
       <Typography variant="label">Where should guest payments go?</Typography>
       <Typography variant="caption" className="text-muted-foreground">
-        Enter the Nigerian bank account that should receive stay payments. We verify it with
-        Paystack and only store the last 4 digits.
+        Enter the Nigerian bank account that should receive stay payments. Details are verified and
+        stored on Paystack — HostsLedger does not save your account number.
       </Typography>
       <Input
         label="Account / business name"

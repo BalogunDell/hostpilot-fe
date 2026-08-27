@@ -118,11 +118,10 @@ export function PayoutSettingsSection() {
       <div>
         <Typography variant="h4">Receive guest payments</Typography>
         <Typography variant="body" className="mt-1 text-muted-foreground">
-          Guest booking payments settle to your Nigerian bank via Paystack. If you’ve already saved
-          an account, we reuse it when you create a payment link. Otherwise you can enter bank
-          details in the Share payment link modal. HostsLedger stores a Paystack payout code and
-          last 4 digits only — and takes a ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()}{' '}
-          guest service fee per night. Pay links expire after {BOOKING_PAYMENT_HOLD_HOURS} hours.
+          Guest booking payments settle to your Nigerian bank via Paystack. Bank details are stored
+          on Paystack only — HostsLedger keeps a payout reference so we can reuse it on the next
+          payment link. Service fee: ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} per
+          night. Pay links expire after {BOOKING_PAYMENT_HOLD_HOURS} hours.
         </Typography>
       </div>
 
@@ -191,8 +190,8 @@ export function PayoutSettingsSection() {
             </Typography>
           ) : (
             <Typography variant="caption" className="text-muted-foreground">
-              We verify the account name with Paystack, then create a payout subaccount. Your full
-              account number is not stored in HostsLedger.
+              We verify the account with Paystack and store settlement details there — not in
+              HostsLedger. You can also enter bank details when creating a payment link.
             </Typography>
           )}
           <Button loading={connectMutation.isPending} onClick={handleConnect}>
