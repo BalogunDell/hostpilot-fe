@@ -1,13 +1,16 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AccountSettingsSection } from '../components/settings/AccountSettingsSection'
+import { PayoutSettingsSection } from '../components/settings/PayoutSettingsSection'
 import { SettingsPlansSection } from '../components/settings/SettingsPlansSection'
 import { SettingsSection } from '../components/settings/SettingsSection'
 import { WhatsAppSettingsSection } from '../components/settings/WhatsAppSettingsSection'
+import { useAuth } from '../context/AuthContext'
 import { TeamSettingsPage } from './TeamSettingsPage'
 
 export function SettingsPage() {
   const location = useLocation()
+  const { featureFlags } = useAuth()
 
   useEffect(() => {
     if (!location.hash) return
@@ -32,6 +35,16 @@ export function SettingsPage() {
       >
         <TeamSettingsPage embedded />
       </SettingsSection>
+
+      {featureFlags.bookingPayments ? (
+        <SettingsSection
+          id="payouts"
+          title="Payouts"
+          description="Connect a bank account to receive guest booking payments."
+        >
+          <PayoutSettingsSection />
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection
         id="pricing"

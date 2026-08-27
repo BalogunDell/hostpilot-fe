@@ -39,6 +39,7 @@ import {
   validateBookingDates,
 } from '../lib/bookingDates'
 import { CreateReviewLinkDialog } from '../components/CreateReviewLinkDialog'
+import { BookingPayLinkDialog } from '../components/BookingPayLinkDialog'
 import { ExportRecordsDialog } from '../components/ExportRecordsDialog'
 
 interface Booking {
@@ -49,6 +50,7 @@ interface Booking {
   checkOut: string
   amount: number
   source: string
+  paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'waived'
 }
 
 interface Expense {
@@ -178,7 +180,7 @@ function ReviewLinkCell({
 
 export function BookingsPage() {
   const api = useApi()
-  const { token } = useAuth()
+  const { token, featureFlags } = useAuth()
   const { hasExportRecords, hasWhatsApp, hasUnlimitedReviewLinks, reviewLinkLimit } = usePlanFeatures()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
@@ -206,6 +208,7 @@ export function BookingsPage() {
   const [formError, setFormError] = useState('')
   const [dateError, setDateError] = useState('')
   const [reviewLinkBooking, setReviewLinkBooking] = useState<Booking | null>(null)
+  const [payLinkBooking, setPayLinkBooking] = useState<Booking | null>(null)
 
   const limit = 10
 
@@ -257,6 +260,19 @@ export function BookingsPage() {
         onSelect: () => openEditDialog(booking),
       },
     ]
+
+    if (
+      featureFlags.bookingPayments &&
+      booking.amount > 0 &&
+      booking.paymentStatus !== 'paid'
+    ) {
+      items.push({
+        label:
+          booking.paymentStatus === 'pending' ? 'Copy payment link' : 'Create payment link',
+        value: 'payment-link',
+        onSelect: () => setPayLinkBooking(booking),
+      })
+    }
 
     if (isPastCheckout(booking.checkOut)) {
       if (reviewRequest?.status === 'active') {
@@ -656,6 +672,17 @@ export function BookingsPage() {
                         </td>
                         <td className="px-4 py-4">
                           <Typography variant="label">{formatNaira(booking.amount)}</Typography>
+                          {featureFlags.bookingPayments &&
+                          booking.paymentStatus &&
+                          booking.paymentStatus !== 'unpaid' ? (
+                            <Typography variant="caption" className="block text-muted-foreground">
+                              {booking.paymentStatus === 'paid'
+                                ? 'Paid online'
+                                : booking.paymentStatus === 'pending'
+                                  ? 'Awaiting payment'
+                                  : booking.paymentStatus}
+                            </Typography>
+                          ) : null}
                         </td>
                         <td className="px-4 py-4">
                           <ReviewLinkCell
@@ -941,6 +968,18 @@ export function BookingsPage() {
           onCreated={() => {
             queryClient.invalidateQueries({ queryKey: ['review-requests'] })
           }}
+        />
+      ) : null}
+
+      {payLinkBooking ? (
+        <BookingPayLinkDialog
+          open={Boolean(payLinkBooking)}
+          onClose={() => {
+            setPayLinkBooking(null)
+            void queryClient.invalidateQueries({ queryKey: ['bookings'] })
+          }}
+          bookingId={payLinkBooking.id}
+          guestName={payLinkBooking.guestName}
         />
       ) : null}
 

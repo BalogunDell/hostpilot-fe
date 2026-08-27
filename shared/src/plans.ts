@@ -361,6 +361,37 @@ export function getPlanCheckoutPriceNgn(plan: PaidPlan, interval: BillingInterva
   return Math.round(full * (1 - discount))
 }
 
+/**
+ * Guest booking payments (Paystack splits).
+ * Guest pays stay + platform fee; host receives the stay amount via subaccount.
+ * Paystack processing fees are borne by HostsLedger main account (`bearer: account`).
+ */
+export const BOOKING_PLATFORM_FEE_PERCENT = 5
+/** Floor so tiny stays still cover ops. */
+export const BOOKING_PLATFORM_FEE_MIN_NGN = 500
+/** Pending pay-link lifetime before the hold expires. */
+export const BOOKING_PAYMENT_HOLD_HOURS = 48
+
+export function computeBookingPlatformFeeNgn(stayAmountNgn: number): number {
+  if (!Number.isFinite(stayAmountNgn) || stayAmountNgn <= 0) return 0
+  const percentFee = Math.ceil((stayAmountNgn * BOOKING_PLATFORM_FEE_PERCENT) / 100)
+  return Math.max(percentFee, BOOKING_PLATFORM_FEE_MIN_NGN)
+}
+
+export function computeBookingCheckoutTotals(stayAmountNgn: number): {
+  stayAmountNgn: number
+  platformFeeNgn: number
+  totalNgn: number
+} {
+  const stay = Math.max(0, Math.round(stayAmountNgn))
+  const platformFeeNgn = computeBookingPlatformFeeNgn(stay)
+  return {
+    stayAmountNgn: stay,
+    platformFeeNgn,
+    totalNgn: stay + platformFeeNgn,
+  }
+}
+
 export function getPlanDefinition(plan: UserPlan): PlanDefinition {
   const normalized = normalizeUserPlan(plan)
   const match = PLAN_CATALOG.find((entry) => entry.id === normalized)
