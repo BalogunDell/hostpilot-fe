@@ -8,12 +8,14 @@ import {
   Ellipsis,
   FileBarChart2,
   LayoutDashboard,
+  MessageSquare,
   Receipt,
   Settings,
   Star,
   X,
 } from 'lucide-react'
 import { Button, Select, Typography } from '../../components'
+import { FeedbackDialog } from '../FeedbackDialog'
 import { ApiStatusBanner } from '../ApiStatusBanner'
 import { ReadOnlyBanner } from '../ReadOnlyBanner'
 import { PropertySelectModal } from '../PropertySelectModal'
@@ -100,6 +102,7 @@ export function DashboardLayout() {
   const navigate = useNavigate()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const navItems = [
     ...baseNavItems,
@@ -241,6 +244,17 @@ export function DashboardLayout() {
               </NavLink>
             )
           })}
+          <button
+            type="button"
+            className={sidebarLinkClass(false)}
+            onClick={() => {
+              setMobileNavOpen(false)
+              setFeedbackOpen(true)
+            }}
+          >
+            <MessageSquare className="size-4 shrink-0" />
+            Send feedback
+          </button>
         </nav>
 
         <div className="mt-auto border-t border-border pt-4">
@@ -411,6 +425,17 @@ export function DashboardLayout() {
                       </button>
                     )
                   })}
+                  <button
+                    type="button"
+                    className="flex flex-col items-center gap-1.5 rounded-xl bg-muted/60 px-2 py-2.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                    onClick={() => {
+                      setMoreOpen(false)
+                      setFeedbackOpen(true)
+                    }}
+                  >
+                    <MessageSquare className="size-4 shrink-0" />
+                    Feedback
+                  </button>
                 </div>
               </div>
             </div>
@@ -419,6 +444,7 @@ export function DashboardLayout() {
       </div>
 
       <PropertySelectModal />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} source="app" />
     </div>
   )
 }
