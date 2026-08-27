@@ -386,25 +386,30 @@ export function getPlanCheckoutPriceNgn(plan: PaidPlan, interval: BillingInterva
  * Guest pays stay + platform fee; host receives the stay amount via subaccount.
  * Paystack processing fees are borne by HostsLedger main account (`bearer: account`).
  */
-export const BOOKING_PLATFORM_FEE_PERCENT = 5
-/** Floor so tiny stays still cover ops. */
-export const BOOKING_PLATFORM_FEE_MIN_NGN = 500
+/** Flat guest service fee charged per night of stay. */
+export const BOOKING_PLATFORM_FEE_PER_NIGHT_NGN = 500
+/** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN — percent fee model removed. */
+export const BOOKING_PLATFORM_FEE_PERCENT = 0
+/** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN. */
+export const BOOKING_PLATFORM_FEE_MIN_NGN = BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
 /** Pending pay-link lifetime before the hold expires. */
 export const BOOKING_PAYMENT_HOLD_HOURS = 48
 
-export function computeBookingPlatformFeeNgn(stayAmountNgn: number): number {
-  if (!Number.isFinite(stayAmountNgn) || stayAmountNgn <= 0) return 0
-  const percentFee = Math.ceil((stayAmountNgn * BOOKING_PLATFORM_FEE_PERCENT) / 100)
-  return Math.max(percentFee, BOOKING_PLATFORM_FEE_MIN_NGN)
+export function computeBookingPlatformFeeNgn(nights: number): number {
+  if (!Number.isFinite(nights) || nights <= 0) return 0
+  return Math.round(nights) * BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
 }
 
-export function computeBookingCheckoutTotals(stayAmountNgn: number): {
+export function computeBookingCheckoutTotals(
+  stayAmountNgn: number,
+  nights: number,
+): {
   stayAmountNgn: number
   platformFeeNgn: number
   totalNgn: number
 } {
   const stay = Math.max(0, Math.round(stayAmountNgn))
-  const platformFeeNgn = computeBookingPlatformFeeNgn(stay)
+  const platformFeeNgn = computeBookingPlatformFeeNgn(nights)
   return {
     stayAmountNgn: stay,
     platformFeeNgn,

@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
   BOOKING_PAYMENT_HOLD_HOURS,
-  BOOKING_PLATFORM_FEE_MIN_NGN,
-  BOOKING_PLATFORM_FEE_PERCENT,
+  BOOKING_PLATFORM_FEE_PER_NIGHT_NGN,
 } from '@staypilot/shared'
 import { Button, Card, Input, Select, Typography } from '../index'
 import { ApiError } from '../../api/client'
@@ -120,8 +119,8 @@ export function PayoutSettingsSection() {
         <Typography variant="body" className="mt-1 text-muted-foreground">
           Connect a Nigerian bank account so guests can pay bookings online. Money settles to your
           bank via Paystack. HostsLedger only stores a Paystack payout code — not your full account
-          number — and takes a {BOOKING_PLATFORM_FEE_PERCENT}% guest service fee (min ₦
-          {BOOKING_PLATFORM_FEE_MIN_NGN.toLocaleString()}). Pay links expire after{' '}
+          number — and takes a ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} guest
+          service fee per night. Pay links expire after{' '}
           {BOOKING_PAYMENT_HOLD_HOURS} hours.
         </Typography>
       </div>

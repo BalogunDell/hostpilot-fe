@@ -1,4 +1,5 @@
 import {
+  BOOKING_PLATFORM_FEE_PER_NIGHT_NGN,
   computeBookingCheckoutTotals,
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
@@ -138,7 +139,7 @@ export function BookingQuoteDialog({
     if (!checkIn || !checkOut || rate <= 0) return null
     const { nights, stayAmountNgn } = computeStayTotalFromNightlyRate(checkIn, checkOut, rate)
     if (nights < 1) return null
-    const checkout = computeBookingCheckoutTotals(stayAmountNgn)
+    const checkout = computeBookingCheckoutTotals(stayAmountNgn, nights)
     return { nights, rate, ...checkout }
   }, [checkIn, checkOut, nightlyRate])
 
@@ -343,7 +344,10 @@ export function BookingQuoteDialog({
                   <strong>{formatNaira(preview.stayAmountNgn)}</strong>
                 </div>
                 <div className="mt-1 flex justify-between gap-2">
-                  <span>Service fee (guest)</span>
+                  <span>
+                    Service fee (₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} ×{' '}
+                    {preview.nights} night{preview.nights === 1 ? '' : 's'})
+                  </span>
                   <strong>{formatNaira(preview.platformFeeNgn)}</strong>
                 </div>
                 <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
@@ -379,7 +383,10 @@ export function BookingQuoteDialog({
                 <strong>{formatNaira(result.stayAmountNgn)}</strong>
               </div>
               <div className="mt-1 flex justify-between gap-2">
-                <span>Service fee (guest)</span>
+                <span>
+                  Service fee (₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} ×{' '}
+                  {result.nights} night{result.nights === 1 ? '' : 's'})
+                </span>
                 <strong>{formatNaira(result.platformFeeNgn)}</strong>
               </div>
               <div className="mt-2 flex justify-between gap-2 border-t border-border pt-2">
