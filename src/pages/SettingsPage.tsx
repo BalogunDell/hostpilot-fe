@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AccountSettingsSection } from '../components/settings/AccountSettingsSection'
+import { FeedbackSettingsSection } from '../components/settings/FeedbackSettingsSection'
 import { PayoutSettingsSection } from '../components/settings/PayoutSettingsSection'
 import { SettingsPlansSection } from '../components/settings/SettingsPlansSection'
 import { SettingsSection } from '../components/settings/SettingsSection'
@@ -52,6 +53,14 @@ export function SettingsPage() {
         description="View your current plan and upgrade options."
       >
         <SettingsPlansSection />
+      </SettingsSection>
+
+      <SettingsSection
+        id="feedback"
+        title="Feedback"
+        description="Send product feedback or questions to the HostsLedger team."
+      >
+        <FeedbackSettingsSection />
       </SettingsSection>
 
       <SettingsSection
