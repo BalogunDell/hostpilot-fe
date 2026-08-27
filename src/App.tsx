@@ -54,6 +54,9 @@ const PublicListingPage = lazy(() =>
 const ReviewSubmitPage = lazy(() =>
   import('./pages/ReviewSubmitPage').then((m) => ({ default: m.ReviewSubmitPage })),
 )
+const PayBookingPage = lazy(() =>
+  import('./pages/PayBookingPage').then((m) => ({ default: m.PayBookingPage })),
+)
 const AdminPage = lazy(() =>
   import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
@@ -180,6 +183,7 @@ function MarketingRoutes() {
       <Route path="/cohost-invite/:token" element={<RedirectToApp />} />
       <Route path="/listings/:slug" element={<RedirectToApp />} />
       <Route path="/review/:token" element={<RedirectToApp />} />
+      <Route path="/pay/:token" element={<RedirectToApp />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -197,6 +201,7 @@ function AppProductRoutes() {
       <Route path="/cohost-invite/:token" element={<CoHostInviteAcceptPage />} />
       <Route path="/listings/:slug" element={<PublicListingPage />} />
       <Route path="/review/:token" element={<ReviewSubmitPage />} />
+      <Route path="/pay/:token" element={<PayBookingPage />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route
         path="/onboarding"

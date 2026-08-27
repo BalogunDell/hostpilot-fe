@@ -1,4 +1,4 @@
-import { addDays, format, isBefore, isValid, parseISO } from 'date-fns'
+import { addDays, addMonths, format, isBefore, isValid, parseISO } from 'date-fns'
 
 export interface BookingDateRange {
   checkIn: string
@@ -84,6 +84,71 @@ export function validateBookingDates(
   }
 
   return null
+}
+
+function toDateOnly(date: Date) {
+  return format(date, 'yyyy-MM-dd')
+}
+
+function maxDateOnly(a: string, b: string) {
+  return a >= b ? a : b
+}
+
+function minDateOnly(a: string, b: string) {
+  return a <= b ? a : b
+}
+
+/**
+ * Open stay windows (check-in → check-out) within [fromDate, toDate]
+ * that do not overlap existing bookings. Checkout day is exclusive.
+ */
+export function computeAvailableStayRanges(
+  bookings: BookingDateRange[],
+  fromDate: string,
+  toDate: string,
+): BookingDateRange[] {
+  if (!fromDate || !toDate || fromDate >= toDate) return []
+
+  const sorted = [...bookings]
+    .filter((booking) => booking.checkIn < booking.checkOut)
+    .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
+
+  const gaps: BookingDateRange[] = []
+  let cursor = fromDate
+
+  for (const booking of sorted) {
+    if (booking.checkOut <= fromDate) continue
+    if (booking.checkIn >= toDate) break
+
+    const gapEnd = minDateOnly(booking.checkIn, toDate)
+    if (cursor < gapEnd) {
+      gaps.push({ checkIn: cursor, checkOut: gapEnd })
+    }
+    cursor = maxDateOnly(cursor, booking.checkOut)
+  }
+
+  if (cursor < toDate) {
+    gaps.push({ checkIn: cursor, checkOut: toDate })
+  }
+
+  return gaps
+}
+
+/** Default availability window: today through 12 months ahead (or later if bookings extend past). */
+export function defaultAvailabilityWindow(bookings: BookingDateRange[], now = new Date()) {
+  const today = toDateOnly(now)
+  let end = toDateOnly(addMonths(now, 12))
+  for (const booking of bookings) {
+    if (booking.checkOut > end) end = booking.checkOut
+  }
+  return { fromDate: today, toDate: end }
+}
+
+/** Upcoming booked stays (check-out still on/after today), oldest first. */
+export function upcomingBookedRanges(bookings: BookingDateRange[], today = toDateOnly(new Date())) {
+  return [...bookings]
+    .filter((booking) => booking.checkOut > today)
+    .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
 }
 
 /** Map booking dates to react-big-calendar all-day event bounds. */

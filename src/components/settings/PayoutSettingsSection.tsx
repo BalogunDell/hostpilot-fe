@@ -1,0 +1,252 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import {
+  BOOKING_PAYMENT_HOLD_HOURS,
+  BOOKING_PLATFORM_FEE_PER_NIGHT_NGN,
+  BOOKING_VAT_PERCENT,
+} from '@staypilot/shared'
+import { Button, Card, Input, Select, Typography } from '../index'
+import { ApiError } from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
+import { useApi } from '../../hooks/useApi'
+import { usePaystackAccountResolve } from '../PayoutDetailsFields'
+
+interface PayoutStatus {
+  connected: boolean
+  hasSavedAccount?: boolean
+  businessName?: string
+  bankName?: string | null
+  accountName?: string | null
+  accountNumberLast4?: string
+  updatedAt?: string
+}
+
+interface BankOption {
+  name: string
+  code: string
+}
+
+export function PayoutSettingsSection() {
+  const api = useApi()
+  const { user } = useAuth()
+  const { showToast } = useToast()
+  const queryClient = useQueryClient()
+
+  const [businessName, setBusinessName] = useState('')
+  const [bankCode, setBankCode] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [resolvedAccountName, setResolvedAccountName] = useState<string | null>(null)
+  const [formError, setFormError] = useState('')
+
+  const statusQuery = useQuery({
+    queryKey: ['payouts', 'status'],
+    queryFn: () => api<PayoutStatus>('/payouts/status'),
+    enabled: Boolean(user),
+  })
+
+  const banksQuery = useQuery({
+    queryKey: ['payouts', 'banks'],
+    queryFn: () => api<{ banks: BankOption[] }>('/payouts/banks'),
+    enabled: Boolean(user),
+    staleTime: 60 * 60 * 1000,
+  })
+
+  const resolve = usePaystackAccountResolve({
+    enabled: Boolean(user) && !statusQuery.data?.connected,
+    bankCode,
+    accountNumber,
+    onResolved: (accountName) => {
+      setResolvedAccountName(accountName)
+      setBusinessName((current) => (current.trim() ? current : accountName))
+      setFormError('')
+    },
+    onCleared: () => setResolvedAccountName(null),
+  })
+
+  const connectMutation = useMutation({
+    mutationFn: () =>
+      api<PayoutStatus>('/payouts/connect', {
+        method: 'POST',
+        body: JSON.stringify({
+          businessName: businessName.trim(),
+          bankCode,
+          accountNumber: accountNumber.trim(),
+        }),
+      }),
+    onSuccess: (result) => {
+      setFormError('')
+      queryClient.setQueryData(['payouts', 'status'], result)
+      setAccountNumber('')
+      setResolvedAccountName(null)
+      showToast('Payout account connected')
+    },
+    onError: (error) => {
+      setFormError(
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Could not connect payout account',
+      )
+    },
+  })
+
+  const disconnectMutation = useMutation({
+    mutationFn: () =>
+      api<PayoutStatus>('/payouts/connect', {
+        method: 'DELETE',
+      }),
+    onSuccess: (result) => {
+      queryClient.setQueryData(['payouts', 'status'], result)
+      showToast('Payout account disconnected')
+    },
+    onError: (error) => {
+      showToast(
+        error instanceof Error ? error.message : 'Could not disconnect payout account',
+        'error',
+      )
+    },
+  })
+
+  const status = statusQuery.data
+  const banks = banksQuery.data?.banks ?? []
+
+  function handleConnect() {
+    if (!bankCode) {
+      setFormError('Select your bank.')
+      return
+    }
+    if (!/^\d{10}$/.test(accountNumber.trim())) {
+      setFormError('Enter a valid 10-digit account number.')
+      return
+    }
+    if (!resolvedAccountName) {
+      setFormError('Wait for Paystack to verify the account number.')
+      return
+    }
+    if (businessName.trim().length < 2) {
+      setFormError('Enter the account / business name as it appears at your bank.')
+      return
+    }
+    setFormError('')
+    connectMutation.mutate()
+  }
+
+  return (
+    <Card padding="md" className="flex flex-col gap-4">
+      <div>
+        <Typography variant="h4">Receive guest payments</Typography>
+        <Typography variant="body" className="mt-1 text-muted-foreground">
+          Guest booking payments settle to your Nigerian bank via Paystack. Bank details are stored
+          on Paystack only — HostsLedger keeps a payout reference so we can reuse it on the next
+          payment link. Service fee: ₦{BOOKING_PLATFORM_FEE_PER_NIGHT_NGN.toLocaleString()} per
+          night. VAT ({BOOKING_VAT_PERCENT}%) is added on that fee. Pay links expire after{' '}
+          {BOOKING_PAYMENT_HOLD_HOURS} hours.
+        </Typography>
+      </div>
+
+      {statusQuery.isLoading ? (
+        <Typography variant="caption">Loading payout status…</Typography>
+      ) : status?.connected || status?.hasSavedAccount ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4">
+          <Typography variant="label">
+            {status.connected ? 'Connected' : 'Saved payout account'}
+          </Typography>
+          <Typography variant="body">
+            {status.accountName ?? status.businessName}
+            {status.bankName ? ` · ${status.bankName}` : ''}
+            {status.accountNumberLast4 ? ` · ****${status.accountNumberLast4}` : ''}
+          </Typography>
+          <Typography variant="caption" className="text-muted-foreground">
+            Refunds are manual for now — coordinate with support if a guest needs one. Failed or
+            abandoned payments leave the booking unpaid until the guest retries or you create a new
+            link.
+          </Typography>
+          <div className="flex flex-wrap gap-2">
+            {status.connected ? (
+              <Button
+                variant="outlined"
+                size="sm"
+                loading={disconnectMutation.isPending}
+                onClick={() => disconnectMutation.mutate()}
+              >
+                Disconnect
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {!statusQuery.isLoading && !status?.connected ? (
+        <div className="flex flex-col gap-3">
+          {status?.hasSavedAccount && !status.connected ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Re-enter your 10-digit account number to reconnect or change banks.
+            </Typography>
+          ) : null}
+          <Select
+            label="Bank"
+            value={bankCode}
+            onChange={(event) => {
+              setBankCode(event.target.value)
+              setResolvedAccountName(null)
+            }}
+            placeholder="Select bank"
+            options={banks.map((bank) => ({ label: bank.name, value: bank.code }))}
+          />
+          <Input
+            label="Account number"
+            value={accountNumber}
+            onChange={(event) => {
+              setAccountNumber(event.target.value.replace(/\D/g, '').slice(0, 10))
+              setResolvedAccountName(null)
+            }}
+            placeholder="10 digits"
+            inputMode="numeric"
+          />
+          {resolve.isResolving ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Verifying account with Paystack…
+            </Typography>
+          ) : resolve.error ? (
+            <Typography variant="caption" className="text-destructive">
+              {resolve.error}
+            </Typography>
+          ) : resolvedAccountName ? (
+            <Typography variant="caption" className="text-muted-foreground">
+              Verified: {resolvedAccountName}
+            </Typography>
+          ) : (
+            <Typography variant="caption" className="text-muted-foreground">
+              Select a bank and enter 10 digits to verify with Paystack.
+            </Typography>
+          )}
+          <Input
+            label="Account / business name"
+            value={businessName}
+            onChange={(event) => setBusinessName(event.target.value)}
+            placeholder="As it appears on your bank account"
+          />
+          {formError ? (
+            <Typography variant="caption" className="text-destructive">
+              {formError}
+            </Typography>
+          ) : (
+            <Typography variant="caption" className="text-muted-foreground">
+              Settlement details are stored on Paystack — not in HostsLedger. You can also enter
+              bank details when creating a payment link.
+            </Typography>
+          )}
+          <Button
+            loading={connectMutation.isPending}
+            disabled={resolve.isResolving || !resolvedAccountName}
+            onClick={handleConnect}
+          >
+            {status?.hasSavedAccount ? 'Save payout account' : 'Connect payout account'}
+          </Button>
+        </div>
+      ) : null}
+    </Card>
+  )
+}

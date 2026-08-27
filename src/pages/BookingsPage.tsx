@@ -39,6 +39,8 @@ import {
   validateBookingDates,
 } from '../lib/bookingDates'
 import { CreateReviewLinkDialog } from '../components/CreateReviewLinkDialog'
+import { BookingPayLinkDialog } from '../components/BookingPayLinkDialog'
+import { BookingQuoteDialog } from '../components/BookingQuoteDialog'
 import { ExportRecordsDialog } from '../components/ExportRecordsDialog'
 
 interface Booking {
@@ -49,6 +51,7 @@ interface Booking {
   checkOut: string
   amount: number
   source: string
+  paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'waived'
 }
 
 interface Expense {
@@ -178,8 +181,9 @@ function ReviewLinkCell({
 
 export function BookingsPage() {
   const api = useApi()
-  const { token } = useAuth()
-  const { hasExportRecords, hasWhatsApp, hasUnlimitedReviewLinks, reviewLinkLimit } = usePlanFeatures()
+  const { token, featureFlags } = useAuth()
+  const { hasExportRecords, hasWhatsApp, hasUnlimitedReviewLinks, reviewLinkLimit, bookingPayLinkLimit, hasUnlimitedBookingPayLinks } =
+    usePlanFeatures()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const {
@@ -206,6 +210,23 @@ export function BookingsPage() {
   const [formError, setFormError] = useState('')
   const [dateError, setDateError] = useState('')
   const [reviewLinkBooking, setReviewLinkBooking] = useState<Booking | null>(null)
+  const [payLinkBooking, setPayLinkBooking] = useState<Booking | null>(null)
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false)
+
+  const { data: payLinkQuota } = useQuery({
+    queryKey: ['booking-payments', 'quota'],
+    queryFn: () =>
+      api<{ used: number; limit: number | null; remaining: number | null; unlimited: boolean }>(
+        '/booking-payments/quota',
+      ),
+    enabled: Boolean(token && featureFlags.bookingPayments),
+  })
+
+  const atPayLinkLimit =
+    featureFlags.bookingPayments &&
+    !hasUnlimitedBookingPayLinks &&
+    bookingPayLinkLimit != null &&
+    (payLinkQuota?.used ?? 0) >= bookingPayLinkLimit
 
   const limit = 10
 
@@ -257,6 +278,30 @@ export function BookingsPage() {
         onSelect: () => openEditDialog(booking),
       },
     ]
+
+    if (
+      featureFlags.bookingPayments &&
+      booking.amount > 0 &&
+      booking.paymentStatus !== 'paid'
+    ) {
+      const isFirstPayLink =
+        !booking.paymentStatus || booking.paymentStatus === 'unpaid'
+      items.push({
+        label:
+          booking.paymentStatus === 'pending' ? 'Copy payment link' : 'Create payment link',
+        value: 'payment-link',
+        onSelect: () => {
+          if (isFirstPayLink && atPayLinkLimit) {
+            showToast(
+              `Payment link limit reached (${bookingPayLinkLimit}). Upgrade to create more.`,
+              'error',
+            )
+            return
+          }
+          setPayLinkBooking(booking)
+        },
+      })
+    }
 
     if (isPastCheckout(booking.checkOut)) {
       if (reviewRequest?.status === 'active') {
@@ -508,10 +553,27 @@ export function BookingsPage() {
         <Typography variant="caption">
           Monitor and manage reservations for {selectedMonthLabel}.
         </Typography>
-        <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
-          <Plus className="size-4" />
-          Add Booking
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {featureFlags.bookingPayments ? (
+            <Button
+              variant="outlined"
+              className="w-full shrink-0 sm:w-auto"
+              disabled={atPayLinkLimit}
+              onClick={() => {
+                if (atPayLinkLimit) return
+                setQuoteDialogOpen(true)
+              }}
+            >
+              {atPayLinkLimit
+                ? `Share payment link (${bookingPayLinkLimit} used)`
+                : 'Share payment link'}
+            </Button>
+          ) : null}
+          <Button className="w-full shrink-0 sm:w-auto" onClick={openAddDialog}>
+            <Plus className="size-4" />
+            Add Booking
+          </Button>
+        </div>
       </div>
 
       <WhatsAppBookingBanner />
@@ -656,6 +718,17 @@ export function BookingsPage() {
                         </td>
                         <td className="px-4 py-4">
                           <Typography variant="label">{formatNaira(booking.amount)}</Typography>
+                          {featureFlags.bookingPayments &&
+                          booking.paymentStatus &&
+                          booking.paymentStatus !== 'unpaid' ? (
+                            <Typography variant="caption" className="block text-muted-foreground">
+                              {booking.paymentStatus === 'paid'
+                                ? 'Paid online'
+                                : booking.paymentStatus === 'pending'
+                                  ? 'Awaiting payment'
+                                  : booking.paymentStatus}
+                            </Typography>
+                          ) : null}
                         </td>
                         <td className="px-4 py-4">
                           <ReviewLinkCell
@@ -941,6 +1014,31 @@ export function BookingsPage() {
           onCreated={() => {
             queryClient.invalidateQueries({ queryKey: ['review-requests'] })
           }}
+        />
+      ) : null}
+
+      {payLinkBooking ? (
+        <BookingPayLinkDialog
+          open={Boolean(payLinkBooking)}
+          onClose={() => {
+            setPayLinkBooking(null)
+            void queryClient.invalidateQueries({ queryKey: ['bookings'] })
+            void queryClient.invalidateQueries({ queryKey: ['booking-payments', 'quota'] })
+          }}
+          bookingId={payLinkBooking.id}
+          guestName={payLinkBooking.guestName}
+          checkIn={payLinkBooking.checkIn}
+          checkOut={payLinkBooking.checkOut}
+        />
+      ) : null}
+
+      {featureFlags.bookingPayments ? (
+        <BookingQuoteDialog
+          open={quoteDialogOpen}
+          onClose={() => setQuoteDialogOpen(false)}
+          properties={properties}
+          defaultPropertyId={propertyFilter || properties[0]?.id || ''}
+          atPayLinkLimit={atPayLinkLimit}
         />
       ) : null}
 

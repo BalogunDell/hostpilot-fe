@@ -94,6 +94,11 @@ export const PLAN_LABELS: Record<UserPlan, string> = {
 export const STARTER_REVIEW_LINK_LIMIT = 5
 export const STARTER_PUBLIC_REVIEW_LIMIT = 5
 
+/** Lifetime guest payment links a Starter host can generate. */
+export const STARTER_BOOKING_PAY_LINK_LIMIT = 3
+/** Lifetime guest payment links a Growth host can generate. */
+export const GROWTH_BOOKING_PAY_LINK_LIMIT = 15
+
 /** Starter plan: one successful WhatsApp action (any kind) per calendar month. */
 export const FREE_WHATSAPP_MONTHLY_QUERIES = 1
 
@@ -126,6 +131,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       '5 expenses per month',
       'Add or update records up to 1 month back',
       '5 guest review requests per month',
+      '3 guest payment links',
       '1 WhatsApp booking or expense log per month',
       'Manual booking & expense tracking',
       'Calendar view',
@@ -144,6 +150,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
       'Up to 3 properties',
       'Unlimited bookings & expenses',
       'Add or update records up to 3 months back',
+      '15 guest payment links',
       'Unlimited WhatsApp booking & expense logging',
       'Automatic guest review requests',
       'Monthly income & expense reports',
@@ -161,6 +168,7 @@ export const PLAN_CATALOG: readonly PlanDefinition[] = [
     features: [
       'Up to 7 properties',
       'Unlimited bookings & expenses',
+      'Unlimited guest payment links',
       'Add or update records up to a year back',
       'Co-host / team access',
       'Role-based access',
@@ -273,6 +281,18 @@ export function hasUnlimitedReviewLinks(plan: UserPlan | string): boolean {
   return comparePlans(plan, 'GROWTH') >= 0
 }
 
+/** Lifetime guest payment-link quota. `null` means unlimited (Pro). */
+export function getBookingPayLinkLimit(plan: UserPlan | string): number | null {
+  if (hasUnlimitedBookingPayLinks(plan)) return null
+  const normalized = normalizeUserPlan(plan)
+  if (normalized === 'GROWTH') return GROWTH_BOOKING_PAY_LINK_LIMIT
+  return STARTER_BOOKING_PAY_LINK_LIMIT
+}
+
+export function hasUnlimitedBookingPayLinks(plan: UserPlan | string): boolean {
+  return normalizeUserPlan(plan) === 'PRO'
+}
+
 export function hasAutoPublishReviews(_plan?: UserPlan | string): boolean {
   return true
 }
@@ -359,6 +379,80 @@ export function getPlanCheckoutPriceNgn(plan: PaidPlan, interval: BillingInterva
   const full = getPlanFullPrepaidPriceNgn(plan, interval)
   const discount = BILLING_INTERVAL_DISCOUNT[interval]
   return Math.round(full * (1 - discount))
+}
+
+/**
+ * Guest booking payments (Paystack splits).
+ * Guest pays stay + platform fee + VAT on the fee; host receives the stay amount via subaccount.
+ * Paystack processing fees are borne by HostsLedger main account (`bearer: account`).
+ */
+/** Flat guest service fee charged per night of stay. */
+export const BOOKING_PLATFORM_FEE_PER_NIGHT_NGN = 500
+/** VAT rate applied to HostsLedger’s guest service fee (not the stay). */
+export const BOOKING_VAT_PERCENT = 7.5
+/** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN — percent fee model removed. */
+export const BOOKING_PLATFORM_FEE_PERCENT = 0
+/** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN. */
+export const BOOKING_PLATFORM_FEE_MIN_NGN = BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
+/** Pending pay-link lifetime before the hold expires. */
+export const BOOKING_PAYMENT_HOLD_HOURS = 2
+
+export function computeBookingPlatformFeeNgn(nights: number): number {
+  if (!Number.isFinite(nights) || nights <= 0) return 0
+  return Math.round(nights) * BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
+}
+
+/** VAT on the platform service fee only (whole NGN). */
+export function computeBookingVatOnFeeNgn(platformFeeNgn: number): number {
+  if (!Number.isFinite(platformFeeNgn) || platformFeeNgn <= 0) return 0
+  return Math.round((platformFeeNgn * BOOKING_VAT_PERCENT) / 100)
+}
+
+export function computeBookingCheckoutTotals(
+  stayAmountNgn: number,
+  nights: number,
+): {
+  stayAmountNgn: number
+  platformFeeNgn: number
+  vatNgn: number
+  /** Platform fee + VAT (amount HostsLedger takes via Paystack transaction_charge). */
+  platformTakeNgn: number
+  totalNgn: number
+} {
+  const stay = Math.max(0, Math.round(stayAmountNgn))
+  const platformFeeNgn = computeBookingPlatformFeeNgn(nights)
+  const vatNgn = computeBookingVatOnFeeNgn(platformFeeNgn)
+  const platformTakeNgn = platformFeeNgn + vatNgn
+  return {
+    stayAmountNgn: stay,
+    platformFeeNgn,
+    vatNgn,
+    platformTakeNgn,
+    totalNgn: stay + platformTakeNgn,
+  }
+}
+
+/** Nights between ISO date-only check-in and check-out (checkout day not charged). */
+export function countStayNights(checkIn: string, checkOut: string): number {
+  const start = Date.parse(`${checkIn}T00:00:00.000Z`)
+  const end = Date.parse(`${checkOut}T00:00:00.000Z`)
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return 0
+  }
+  return Math.round((end - start) / 86_400_000)
+}
+
+export function computeStayTotalFromNightlyRate(
+  checkIn: string,
+  checkOut: string,
+  nightlyRateNgn: number,
+): { nights: number; stayAmountNgn: number } {
+  const nights = countStayNights(checkIn, checkOut)
+  const rate = Math.max(0, Math.round(nightlyRateNgn))
+  return {
+    nights,
+    stayAmountNgn: nights * rate,
+  }
 }
 
 export function getPlanDefinition(plan: UserPlan): PlanDefinition {

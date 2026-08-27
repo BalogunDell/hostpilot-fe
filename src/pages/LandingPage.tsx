@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { apiRequest } from '../api/client'
+import { FeedbackDialog } from '../components/FeedbackDialog'
 import { cn } from '../lib/cn'
 import { LOGIN_URL, REGISTER_URL, SITE_URL } from '../lib/urls'
 import { buttonVariants } from '../components/Button'
@@ -295,6 +296,11 @@ function PropertyCountStat({ count }: { count: number | null }) {
 
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+  const [supportWhatsApp, setSupportWhatsApp] = useState<{
+    whatsappDisplay: string
+    whatsappLink: string
+  } | null>(null)
   const [propertyCount, setPropertyCount] = useState<number | null>(null)
   const bento = useInView()
   const ledger = useInView()
@@ -331,6 +337,20 @@ export function LandingPage() {
       .catch(() => {
         if (!cancelled) setPropertyCount(null)
       })
+    apiRequest<{ whatsappDisplay: string; whatsappLink: string }>('/public/support', {
+      logoutOn401: false,
+    })
+      .then((data) => {
+        if (!cancelled) {
+          setSupportWhatsApp({
+            whatsappDisplay: data.whatsappDisplay,
+            whatsappLink: data.whatsappLink,
+          })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSupportWhatsApp(null)
+      })
     return () => {
       cancelled = true
     }
@@ -352,6 +372,13 @@ export function LandingPage() {
             <a href="#pricing" className="text-sm font-medium text-primary-700 hover:text-foreground">
               Pricing
             </a>
+            <button
+              type="button"
+              className="text-sm font-medium text-primary-700 hover:text-foreground"
+              onClick={() => setContactOpen(true)}
+            >
+              Contact
+            </button>
           </nav>
 
           <div className="flex items-center gap-2.5">
@@ -393,6 +420,16 @@ export function LandingPage() {
             >
               Pricing
             </a>
+            <button
+              type="button"
+              className="px-1 py-2.5 text-left font-medium text-primary-700"
+              onClick={() => {
+                setMenuOpen(false)
+                setContactOpen(true)
+              }}
+            >
+              Contact
+            </button>
             <a
               href={LOGIN_URL}
               className={cn(outlineBtn, 'mt-1.5 w-full')}
@@ -778,7 +815,7 @@ export function LandingPage() {
 
       {/* ============ FOOTER ============ */}
       <footer className="bg-primary-900 py-12 text-white">
-        <div className="mx-auto grid w-full max-w-[1120px] grid-cols-1 gap-8 border-b border-primary-700 px-5 pb-8 md:grid-cols-[1.4fr_1fr_1.2fr]">
+        <div className="mx-auto grid w-full max-w-[1120px] grid-cols-1 gap-8 border-b border-primary-700 px-5 pb-8 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
           <Brand dark />
 
           <div>
@@ -792,6 +829,27 @@ export function LandingPage() {
           </div>
 
           <div>
+            <h4 className="mb-3.5 text-xs uppercase tracking-widest text-primary-400">Contact</h4>
+            <button
+              type="button"
+              className="block py-1 text-left text-sm text-primary-200 hover:text-white"
+              onClick={() => setContactOpen(true)}
+            >
+              Send a message
+            </button>
+            {supportWhatsApp ? (
+              <a
+                href={supportWhatsApp.whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block py-1 text-sm text-primary-200 hover:text-white"
+              >
+                WhatsApp {supportWhatsApp.whatsappDisplay}
+              </a>
+            ) : null}
+          </div>
+
+          <div>
             <h4 className="mb-3.5 text-xs uppercase tracking-widest text-primary-400">Stay Updated</h4>
             <NewsletterForm />
           </div>
@@ -801,6 +859,12 @@ export function LandingPage() {
           © {new Date().getFullYear()} HostsLedger. A Dees Enterprise Company.
         </div>
       </footer>
+
+      <FeedbackDialog
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        source="marketing"
+      />
     </div>
   )
 }
