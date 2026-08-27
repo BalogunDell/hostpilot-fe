@@ -59,7 +59,8 @@ interface QuoteResult {
   payUrl: string
   expiresAt: string
   policy: {
-    refunds: string
+    failedPayments: string
+    holds: string
   }
   booking: {
     id: string
@@ -439,7 +440,7 @@ export function BookingQuoteDialog({
             </div>
             <Input label="Share this link" value={result.payUrl} readOnly />
             <Typography variant="caption" className="text-muted-foreground">
-              Expires {new Date(result.expiresAt).toLocaleString()}. {result.policy.refunds}
+              Expires {new Date(result.expiresAt).toLocaleString()}.
             </Typography>
             <div className="flex flex-wrap gap-2">
               <Button

@@ -32,10 +32,8 @@ interface PayLinkResult {
   totalNgn: number
   reused?: boolean
   policy: {
-    summary: string
     failedPayments: string
     holds: string
-    refunds: string
   }
 }
 
@@ -221,7 +219,7 @@ export function BookingPayLinkDialog({
             </div>
             <Input label="Share this link" value={result.payUrl} readOnly />
             <Typography variant="caption" className="text-muted-foreground">
-              Expires {new Date(result.expiresAt).toLocaleString()}. {result.policy.refunds}
+              Expires {new Date(result.expiresAt).toLocaleString()}.
             </Typography>
             <div className="flex flex-wrap gap-2">
               <Button

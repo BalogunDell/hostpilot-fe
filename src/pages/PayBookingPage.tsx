@@ -4,6 +4,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { BOOKING_PLATFORM_FEE_PER_NIGHT_NGN, BOOKING_VAT_PERCENT } from '@staypilot/shared'
 import { Button, Card, Input, Typography } from '../components'
 import { ApiError, apiRequest, formatNaira } from '../api/client'
+import { formatBookingDisplayDate } from '../lib/bookingDates'
+import { downloadBookingPaymentReceipt } from '../lib/bookingPaymentReceipt'
 import { openPaystackCheckout } from '../lib/paystack'
 
 interface PayPageData {
@@ -19,11 +21,12 @@ interface PayPageData {
   vatNgn: number
   totalNgn: number
   currency: 'NGN'
+  reference: string
+  guestEmail?: string | null
+  paidAt?: string | null
   policy: {
-    summary: string
     failedPayments: string
     holds: string
-    refunds: string
   }
 }
 
@@ -132,6 +135,7 @@ export function PayBookingPage() {
 
   const data = pageQuery.data
   const alreadyPaid = paid || data.status === 'success'
+  const stayRange = `${formatBookingDisplayDate(data.checkIn)} → ${formatBookingDisplayDate(data.checkOut)}`
 
   return (
     <div className="min-h-svh bg-background px-4 py-10">
@@ -142,7 +146,7 @@ export function PayBookingPage() {
           </Typography>
           <Typography variant="h3">{data.propertyName}</Typography>
           <Typography variant="body" className="text-muted-foreground">
-            Stay for {data.guestName}: {data.checkIn} → {data.checkOut}
+            Stay for {data.guestName}: {stayRange}
           </Typography>
 
           <div className="rounded-xl border border-border bg-muted/20 p-4">
@@ -172,9 +176,33 @@ export function PayBookingPage() {
           </div>
 
           {alreadyPaid ? (
-            <Typography variant="body" className="text-green-700">
-              Payment received. Thank you — your host has been notified.
-            </Typography>
+            <div className="flex flex-col gap-3">
+              <Typography variant="body" className="text-green-700">
+                Payment received. Thank you — your host has been notified.
+              </Typography>
+              <Button
+                variant="outlined"
+                allowWhenReadOnly
+                onClick={() =>
+                  downloadBookingPaymentReceipt({
+                    propertyName: data.propertyName,
+                    guestName: data.guestName,
+                    guestEmail: data.guestEmail ?? (email.trim() || null),
+                    checkIn: data.checkIn,
+                    checkOut: data.checkOut,
+                    nights: data.nights,
+                    stayAmountNgn: data.stayAmountNgn,
+                    platformFeeNgn: data.platformFeeNgn,
+                    vatNgn: data.vatNgn,
+                    totalNgn: data.totalNgn,
+                    reference: data.reference,
+                    paidAt: data.paidAt,
+                  })
+                }
+              >
+                Download receipt
+              </Button>
+            </div>
           ) : data.status === 'expired' || data.status === 'failed' ? (
             <Typography variant="body" className="text-destructive">
               This payment link is no longer active. Ask your host to send a new one.
@@ -213,16 +241,10 @@ export function PayBookingPage() {
         <Card padding="md" className="flex flex-col gap-2">
           <Typography variant="label">Payment notes</Typography>
           <Typography variant="caption" className="text-muted-foreground">
-            {data.policy.summary}
-          </Typography>
-          <Typography variant="caption" className="text-muted-foreground">
             {data.policy.holds}
           </Typography>
           <Typography variant="caption" className="text-muted-foreground">
             {data.policy.failedPayments}
-          </Typography>
-          <Typography variant="caption" className="text-muted-foreground">
-            {data.policy.refunds}
           </Typography>
         </Card>
       </div>
