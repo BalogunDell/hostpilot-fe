@@ -13,6 +13,7 @@ import {
 import { apiRequest } from '../api/client'
 import { FeedbackDialog } from '../components/FeedbackDialog'
 import { cn } from '../lib/cn'
+import { buildSupportWhatsApp } from '../lib/supportWhatsApp'
 import { LOGIN_URL, REGISTER_URL, SITE_URL } from '../lib/urls'
 import { buttonVariants } from '../components/Button'
 import { usePageSeo } from '../hooks/usePageSeo'
@@ -218,7 +219,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 }
 
 /** Marketing floor until organic volume is higher. */
-const PROPERTY_COUNT_FLOOR = 20
+const PROPERTY_COUNT_FLOOR = 50
 
 function useCountUp(target: number | null, durationMs = 1800) {
   const [value, setValue] = useState(1)
@@ -297,10 +298,7 @@ function PropertyCountStat({ count }: { count: number | null }) {
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
-  const [supportWhatsApp, setSupportWhatsApp] = useState<{
-    whatsappDisplay: string
-    whatsappLink: string
-  } | null>(null)
+  const [supportWhatsApp, setSupportWhatsApp] = useState(() => buildSupportWhatsApp())
   const [propertyCount, setPropertyCount] = useState<number | null>(null)
   const bento = useInView()
   const ledger = useInView()
@@ -337,19 +335,21 @@ export function LandingPage() {
       .catch(() => {
         if (!cancelled) setPropertyCount(null)
       })
-    apiRequest<{ whatsappDisplay: string; whatsappLink: string }>('/public/support', {
-      logoutOn401: false,
-    })
+    apiRequest<{ whatsappDisplay: string; whatsappLink: string; whatsappNumber?: string }>(
+      '/public/support',
+      { logoutOn401: false },
+    )
       .then((data) => {
         if (!cancelled) {
           setSupportWhatsApp({
+            whatsappNumber: data.whatsappNumber ?? data.whatsappDisplay,
             whatsappDisplay: data.whatsappDisplay,
             whatsappLink: data.whatsappLink,
           })
         }
       })
       .catch(() => {
-        if (!cancelled) setSupportWhatsApp(null)
+        if (!cancelled) setSupportWhatsApp(buildSupportWhatsApp())
       })
     return () => {
       cancelled = true
@@ -372,13 +372,14 @@ export function LandingPage() {
             <a href="#pricing" className="text-sm font-medium text-primary-700 hover:text-foreground">
               Pricing
             </a>
-            <button
-              type="button"
+            <a
+              href={supportWhatsApp.whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-sm font-medium text-primary-700 hover:text-foreground"
-              onClick={() => setContactOpen(true)}
             >
-              Contact
-            </button>
+              Contact us
+            </a>
           </nav>
 
           <div className="flex items-center gap-2.5">
@@ -420,16 +421,15 @@ export function LandingPage() {
             >
               Pricing
             </a>
-            <button
-              type="button"
-              className="px-1 py-2.5 text-left font-medium text-primary-700"
-              onClick={() => {
-                setMenuOpen(false)
-                setContactOpen(true)
-              }}
+            <a
+              href={supportWhatsApp.whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-1 py-2.5 font-medium text-primary-700"
+              onClick={() => setMenuOpen(false)}
             >
-              Contact
-            </button>
+              Contact us
+            </a>
             <a
               href={LOGIN_URL}
               className={cn(outlineBtn, 'mt-1.5 w-full')}
@@ -483,6 +483,14 @@ export function LandingPage() {
               </a>
               <a href="#features" className={cn(outlineBtn, 'w-full sm:w-auto')}>
                 See how it works
+              </a>
+              <a
+                href={supportWhatsApp.whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(outlineBtn, 'w-full sm:w-auto')}
+              >
+                Contact us on WhatsApp
               </a>
             </div>
             <ul
@@ -830,23 +838,21 @@ export function LandingPage() {
 
           <div>
             <h4 className="mb-3.5 text-xs uppercase tracking-widest text-primary-400">Contact</h4>
+            <a
+              href={supportWhatsApp.whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block py-1 text-sm text-primary-200 hover:text-white"
+            >
+              WhatsApp {supportWhatsApp.whatsappDisplay}
+            </a>
             <button
               type="button"
               className="block py-1 text-left text-sm text-primary-200 hover:text-white"
               onClick={() => setContactOpen(true)}
             >
-              Send a message
+              Email us a message
             </button>
-            {supportWhatsApp ? (
-              <a
-                href={supportWhatsApp.whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block py-1 text-sm text-primary-200 hover:text-white"
-              >
-                WhatsApp {supportWhatsApp.whatsappDisplay}
-              </a>
-            ) : null}
           </div>
 
           <div>
