@@ -4,7 +4,7 @@ import {
   computeBookingCheckoutTotals,
   computeStayTotalFromNightlyRate,
 } from '@staypilot/shared'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Dialog, Input, MoneyInput, Typography } from './index'
 import {
@@ -37,6 +37,21 @@ interface PayLinkResult {
   }
 }
 
+interface ExistingPayLink {
+  hasLink: boolean
+  paymentStatus: string
+  status?: 'pending' | 'success' | 'failed' | 'expired'
+  payUrl?: string
+  expiresAt?: string
+  nights?: number
+  nightlyRateNgn?: number
+  stayAmountNgn?: number
+  platformFeeNgn?: number
+  vatNgn?: number
+  totalNgn?: number
+  policy?: PayLinkResult['policy']
+}
+
 interface BookingPayLinkDialogProps {
   open: boolean
   onClose: () => void
@@ -63,6 +78,12 @@ export function BookingPayLinkDialog({
   const [payoutForm, setPayoutForm] = useState<PayoutFormValues>(emptyPayoutForm)
   const payoutStatusQuery = usePayoutStatus(open)
 
+  const existingQuery = useQuery({
+    queryKey: ['booking-payments', 'pay-link', bookingId],
+    queryFn: () => api<ExistingPayLink>(`/booking-payments/pay-links/${bookingId}`),
+    enabled: open && Boolean(bookingId),
+  })
+
   useEffect(() => {
     if (!open) return
     setNightlyRate('')
@@ -70,6 +91,23 @@ export function BookingPayLinkDialog({
     setFormError('')
     setPayoutForm(emptyPayoutForm())
   }, [open, bookingId])
+
+  useEffect(() => {
+    if (!open || !existingQuery.data?.hasLink) return
+    if (existingQuery.data.status !== 'pending' || !existingQuery.data.payUrl) return
+    setResult({
+      payUrl: existingQuery.data.payUrl,
+      expiresAt: existingQuery.data.expiresAt ?? new Date().toISOString(),
+      nights: existingQuery.data.nights ?? 0,
+      nightlyRateNgn: existingQuery.data.nightlyRateNgn ?? 0,
+      stayAmountNgn: existingQuery.data.stayAmountNgn ?? 0,
+      platformFeeNgn: existingQuery.data.platformFeeNgn ?? 0,
+      vatNgn: existingQuery.data.vatNgn ?? 0,
+      totalNgn: existingQuery.data.totalNgn ?? 0,
+      reused: true,
+      policy: existingQuery.data.policy ?? { failedPayments: '', holds: '' },
+    })
+  }, [open, existingQuery.data])
 
   const preview = useMemo(() => {
     const rate = parseMoneyInput(nightlyRate)
@@ -108,6 +146,7 @@ export function BookingPayLinkDialog({
       setFormError('')
       showToast(data.reused ? 'Existing payment link ready' : 'Payment link created')
       void queryClient.invalidateQueries({ queryKey: ['payouts', 'status'] })
+      void queryClient.invalidateQueries({ queryKey: ['booking-payments', 'pay-link', bookingId] })
     },
     onError: (error) => {
       const message =
@@ -128,10 +167,21 @@ export function BookingPayLinkDialog({
     onClose()
   }
 
+  const loadingExisting = open && existingQuery.isLoading && !result
+  const title = result?.reused
+    ? `Payment link · ${guestName}`
+    : result
+      ? `Share payment link · ${guestName}`
+      : `Collect payment · ${guestName}`
+
   return (
-    <Dialog open={open} onClose={handleClose} title={`Collect payment · ${guestName}`}>
+    <Dialog open={open} onClose={handleClose} title={title}>
       <div className="flex flex-col gap-4">
-        {!result ? (
+        {loadingExisting ? (
+          <Typography variant="body" className="text-muted-foreground">
+            Loading payment link…
+          </Typography>
+        ) : !result ? (
           <>
             <Typography variant="body" className="text-muted-foreground">
               Enter the nightly rate for this stay (it can differ each time). We’ll multiply by the
