@@ -395,7 +395,7 @@ export const BOOKING_PLATFORM_FEE_PERCENT = 0
 /** @deprecated Use BOOKING_PLATFORM_FEE_PER_NIGHT_NGN. */
 export const BOOKING_PLATFORM_FEE_MIN_NGN = BOOKING_PLATFORM_FEE_PER_NIGHT_NGN
 /** Pending pay-link lifetime before the hold expires. */
-export const BOOKING_PAYMENT_HOLD_HOURS = 48
+export const BOOKING_PAYMENT_HOLD_HOURS = 2
 
 export function computeBookingPlatformFeeNgn(nights: number): number {
   if (!Number.isFinite(nights) || nights <= 0) return 0
